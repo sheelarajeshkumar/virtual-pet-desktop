@@ -15,6 +15,7 @@ Every bundled asset must have a known source and a license compatible with open-
 | Asset | Creator/source | Changes | License |
 | --- | --- | --- | --- |
 | `src/assets/bark.wav` | Joseph SARDIN and Axeline T., [Small Dog Barking Behind Door](https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html) | A single bark was trimmed, filtered, faded, normalized, converted to mono, and resampled to 44.1 kHz PCM WAV | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `src/assets/dog-snoring.mp3` | Filmscore, [Small Dog Snoring 3](https://freesound.org/people/Filmscore/sounds/516871/) | Freesound high-quality MP3 preview bundled unchanged | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
 
 ## Contribution requirements
 

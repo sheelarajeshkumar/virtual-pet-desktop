@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Open-source community documentation and GitHub contribution workflows.
+- CC0 dog-snoring audio that loops only while the puppy sleeps.
+
+### Fixed
+
+- Puppy sleep now renders inside its doghouse instead of bypassing the hut scene.
 
 ## [0.1.0] - 2026-08-29
 

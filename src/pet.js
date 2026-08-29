@@ -23,6 +23,10 @@ dogAtlas.src = "assets/dog-atlas-v2.png";
 const barkSound = new Audio("assets/bark.wav");
 barkSound.preload = "auto";
 barkSound.volume = 0.65;
+const snoreSound = new Audio("assets/dog-snoring.mp3");
+snoreSound.preload = "auto";
+snoreSound.loop = true;
+snoreSound.volume = 0.28;
 
 function rect(x, y, width, height, color) {
   ctx.fillStyle = color;
@@ -137,6 +141,32 @@ function drawDogAtlas(snapshot) {
   const sourceHeight = dogAtlas.naturalHeight / ATLAS_ROWS;
   const inset = (canvas.width - PET_SIZE) / 2;
 
+  if (snapshot.behavior === "sleep") {
+    drawDogHouse(snapshot.name);
+    ctx.save();
+    dogHouseDoorPath();
+    ctx.clip();
+    ctx.drawImage(
+      dogAtlas,
+      frame * sourceWidth,
+      row * sourceHeight,
+      sourceWidth,
+      sourceHeight,
+      61,
+      111,
+      136,
+      136,
+    );
+    ctx.restore();
+
+    ctx.fillStyle = "#d7e9ff";
+    ctx.font = "bold 18px monospace";
+    ctx.fillText("z", 191, 70 - (frame % 2) * 5);
+    ctx.font = "bold 25px monospace";
+    ctx.fillText("Z", 208, 48 - (frame % 2) * 5);
+    return;
+  }
+
   ctx.save();
   if (snapshot.facing === "left") {
     ctx.translate(canvas.width, 0);
@@ -157,6 +187,64 @@ function drawDogAtlas(snapshot) {
   ctx.restore();
 }
 
+function dogHouseDoorPath() {
+  ctx.beginPath();
+  ctx.arc(129, 154, 49, Math.PI, 0);
+  ctx.lineTo(178, 232);
+  ctx.lineTo(80, 232);
+  ctx.closePath();
+}
+
+function drawDogHouse(name) {
+  ctx.fillStyle = "rgba(36, 22, 17, 0.2)";
+  ctx.fillRect(27, 232, 204, 8);
+
+  ctx.fillStyle = "#4a2518";
+  ctx.fillRect(34, 91, 190, 143);
+  ctx.fillStyle = "#bd602d";
+  ctx.fillRect(42, 99, 174, 135);
+
+  ctx.fillStyle = "#4a2518";
+  dogHouseDoorPath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(18, 99);
+  ctx.lineTo(128, 17);
+  ctx.lineTo(239, 99);
+  ctx.closePath();
+  ctx.fillStyle = "#4a2518";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(32, 94);
+  ctx.lineTo(128, 28);
+  ctx.lineTo(225, 94);
+  ctx.closePath();
+  ctx.fillStyle = "#e4873d";
+  ctx.fill();
+
+  ctx.fillStyle = "#f7c96f";
+  ctx.fillRect(91, 86, 74, 19);
+  ctx.fillStyle = "#4a2518";
+  ctx.font = "bold 12px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(name.slice(0, 8).toUpperCase(), 128, 100);
+}
+
+function syncSounds(snapshot) {
+  const shouldSnore = snapshot.kind === "puppy" && snapshot.behavior === "sleep";
+  const wasSnoring = lastSnapshot?.kind === "puppy" && lastSnapshot.behavior === "sleep";
+
+  if (shouldSnore && !wasSnoring) {
+    snoreSound.currentTime = 0;
+    snoreSound.play().catch((error) => console.warn("Snore audio unavailable", error));
+  } else if (!shouldSnore && wasSnoring) {
+    snoreSound.pause();
+    snoreSound.currentTime = 0;
+  }
+}
+
 function render(snapshot) {
   if (
     snapshot.kind === "puppy" &&
@@ -167,6 +255,7 @@ function render(snapshot) {
     barkSound.currentTime = 0;
     barkSound.play().catch((error) => console.warn("Bark audio unavailable", error));
   }
+  syncSounds(snapshot);
   lastSnapshot = snapshot;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
