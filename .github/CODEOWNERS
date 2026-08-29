@@ -1,0 +1,8 @@
+# Default ownership
+* @sheelarajeshkumar
+
+# Sensitive project policy and automation
+/.github/ @sheelarajeshkumar
+/SECURITY.md @sheelarajeshkumar
+/CODE_OF_CONDUCT.md @sheelarajeshkumar
+/GOVERNANCE.md @sheelarajeshkumar

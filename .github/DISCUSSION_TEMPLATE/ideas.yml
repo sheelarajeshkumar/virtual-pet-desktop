@@ -1,0 +1,19 @@
+title: "[Idea] "
+labels:
+  - ideas
+body:
+  - type: markdown
+    attributes:
+      value: Use this discussion for early ideas that are not ready for a focused feature request.
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: What would you like to explore, and what user problem might it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: tradeoffs
+    attributes:
+      label: Questions and trade-offs
+      description: What is uncertain or needs community input?

@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light;
+  background: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+main {
+  width: 128px;
+  height: 128px;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+canvas {
+  display: block;
+  width: 128px;
+  height: 128px;
+  image-rendering: pixelated;
+  background: transparent;
+}

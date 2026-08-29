@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Virtual Pet",
+  "version": "0.1.0",
+  "identifier": "in.virtualpet.desktop",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "pet",
+        "title": "Virtual Pet",
+        "url": "index.html",
+        "width": 128,
+        "height": 128,
+        "minWidth": 128,
+        "minHeight": 128,
+        "maxWidth": 128,
+        "maxHeight": 128,
+        "center": true,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "visibleOnAllWorkspaces": true,
+        "skipTaskbar": true,
+        "focus": false,
+        "focusable": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Entertainment",
+    "shortDescription": "A tiny animated pet that lives on your desktop.",
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}

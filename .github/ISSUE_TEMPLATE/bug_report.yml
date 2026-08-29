@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a reproducible problem with the desktop pet
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting a bug. Search existing issues and remove secrets from logs before submitting.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Other or unsupported
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating-system version
+      placeholder: macOS 15.1 or Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version or commit
+      placeholder: v0.1.0 or commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the actual and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Start the app
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste only relevant logs. Remove usernames, paths, tokens, and other private data.
+      render: shell
+  - type: textarea
+    id: display
+    attributes:
+      label: Display setup
+      description: For movement or fullscreen bugs, include monitor arrangement, scaling, and whether the app is fullscreen.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: This report does not contain credentials or private information.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

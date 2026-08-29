@@ -1,0 +1,18 @@
+title: "[Show and tell] "
+labels:
+  - show-and-tell
+body:
+  - type: markdown
+    attributes:
+      value: Share a pet, animation experiment, customization, or project built with Virtual Pet Desktop.
+  - type: textarea
+    id: project
+    attributes:
+      label: What did you make?
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Links and media
+      description: Share screenshots, recordings, source code, and asset-license details.

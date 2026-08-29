@@ -1,0 +1,49 @@
+name: New pet proposal
+description: Propose a species, character, animation set, or community pet pack
+title: "[Pet]: "
+labels:
+  - pet
+  - enhancement
+body:
+  - type: input
+    id: pet
+    attributes:
+      label: Pet or species
+      placeholder: Corgi, capybara, robot dog...
+    validations:
+      required: true
+  - type: textarea
+    id: personality
+    attributes:
+      label: Personality and behavior
+      description: Describe how it should idle, walk, run, play, sleep, and react.
+    validations:
+      required: true
+  - type: textarea
+    id: assets
+    attributes:
+      label: Proposed assets and licensing
+      description: State whether you will create the assets and which license they will use. Include source links for existing assets.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Visual references
+      description: Link only to references; do not submit copyrighted game or website assets.
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I can create or help create the sprite atlas.
+        - label: I can help implement the Rust and JavaScript changes.
+        - label: I can test on macOS.
+        - label: I can test on Windows.
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Rights confirmation
+      options:
+        - label: I will only submit assets that can legally be redistributed by this open-source project.
+          required: true

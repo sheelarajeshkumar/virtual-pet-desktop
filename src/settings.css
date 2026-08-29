@@ -1,0 +1,88 @@
+:root {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color: #2b1b11;
+  background: #fff1d6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(420px 220px at 100% 0, #ffd49a, transparent 60%),
+    #fff1d6;
+}
+
+main {
+  padding: 24px;
+}
+
+.eyebrow,
+h1,
+label,
+button {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #dc4c00;
+  font-size: 11px;
+}
+
+h1 {
+  margin: 8px 0 20px;
+  font-size: 24px;
+}
+
+form {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+label {
+  font-size: 11px;
+}
+
+input,
+select,
+button {
+  min-height: 40px;
+  border: 3px solid #241611;
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 8px 10px;
+  background: #fffdf6;
+}
+
+button {
+  grid-column: 2;
+  color: white;
+  background: #2f66f0;
+  box-shadow: 4px 4px 0 #241611;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #ff7a1a;
+  outline-offset: 2px;
+}
+
+#message {
+  grid-column: 2;
+  min-height: 20px;
+  margin: 0;
+  color: #c0392b;
+}
+

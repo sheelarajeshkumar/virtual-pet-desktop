@@ -1,0 +1,54 @@
+name: Feature request
+description: Propose an improvement to the app or contributor experience
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: Explain the user problem first. Large architecture changes should begin as a design discussion.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is difficult or missing today, and who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful behavior and user experience.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or different approaches did you consider?
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platform scope
+      options:
+        - macOS and Windows
+        - macOS only
+        - Windows only
+        - Contributor tooling or documentation
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to help implement or test this feature.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
+        - label: This request describes one focused outcome.
+          required: true

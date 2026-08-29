@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Pet Settings</title>
+    <link rel="stylesheet" href="settings.css" />
+    <script src="settings.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">YOUR DESKTOP FRIEND</p>
+      <h1>Virtual Pet</h1>
+      <form id="settings-form">
+        <label for="name">PET NAME</label>
+        <input id="name" name="name" maxlength="24" required autocomplete="off" />
+
+        <label for="kind">PET</label>
+        <select id="kind" name="kind">
+          <option value="puppy">Puppy</option>
+          <option value="cat">Cat</option>
+        </select>
+
+        <button type="submit">SAVE</button>
+        <p id="message" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+  </body>
+</html>
+

@@ -1,0 +1,26 @@
+# JavaScript
+node_modules/
+npm-debug.log*
+
+# Rust and Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.mobileprovision
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test and build output
+coverage/
+dist/
+*.log

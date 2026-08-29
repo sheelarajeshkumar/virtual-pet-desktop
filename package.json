@@ -1,0 +1,29 @@
+{
+  "name": "virtual-pet-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A lightweight cross-platform desktop pet for macOS and Windows.",
+  "license": "MIT",
+  "author": "Sheela Rajesh Kumar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sheelarajeshkumar/virtual-pet-desktop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sheelarajeshkumar/virtual-pet-desktop/issues"
+  },
+  "homepage": "https://github.com/sheelarajeshkumar/virtual-pet-desktop#readme",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icon": "tauri icon src-tauri/icons/app-icon.svg",
+    "check:js": "node --check src/pet.js && node --check src/settings.js",
+    "check:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
+    "check:rust": "cargo check --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run check:js && npm run check:fmt && npm run check:rust",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}
