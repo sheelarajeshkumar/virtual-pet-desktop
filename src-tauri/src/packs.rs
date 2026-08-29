@@ -56,9 +56,33 @@ pub struct PetPackManifest {
     pub authors: Vec<PackAuthor>,
     pub atlas: PackAtlas,
     pub animations: BTreeMap<String, PackAnimation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub directional: Option<PackDirectional>,
     #[serde(default)]
     pub sounds: BTreeMap<String, PackSound>,
     pub license: PackLicense,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
+pub struct PackDirectional {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub horizontal: Option<PackHorizontalDirection>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vertical: Option<PackVerticalDirection>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diagonal: Option<PackVerticalDirection>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct PackHorizontalDirection {
+    pub atlas: PackAtlas,
+    pub animations: BTreeMap<String, PackAnimation>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct PackVerticalDirection {
+    pub atlas: PackAtlas,
+    pub animations: BTreeMap<String, BTreeMap<String, PackAnimation>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -228,6 +252,73 @@ pub fn remove_installed_pack(packs_root: &Path, id: &str) -> Result<(), PackErro
     Ok(())
 }
 
+/// Exports one installed pack into a new directory selected by the user.
+pub fn export_installed_pack(
+    packs_root: &Path,
+    id: &str,
+    destination_directory: &Path,
+) -> Result<PathBuf, PackError> {
+    validate_pack_id(id)?;
+    let root = managed_root(packs_root, false)?;
+    require_managed_root(&root)?;
+    let source = root.join(id);
+    let source_metadata = fs::symlink_metadata(&source).map_err(|error| {
+        PackError::new(format!("cannot access installed pet pack {id}: {error}"))
+    })?;
+    if source_metadata.file_type().is_symlink() || !source_metadata.is_dir() {
+        return Err(PackError::new(
+            "installed pet pack must be a regular directory",
+        ));
+    }
+    let source = fs::canonicalize(&source).map_err(|error| {
+        PackError::new(format!("cannot access installed pet pack {id}: {error}"))
+    })?;
+    if source.parent() != Some(root.as_path()) {
+        return Err(PackError::new(
+            "installed pet pack is outside the managed packs directory",
+        ));
+    }
+    let pack = validate_pack_internal(&source)?;
+    if pack.manifest.id != id {
+        return Err(PackError::new(
+            "installed directory name does not match pack id",
+        ));
+    }
+
+    let destination_metadata = fs::symlink_metadata(destination_directory)
+        .map_err(|error| PackError::new(format!("cannot access export destination: {error}")))?;
+    if destination_metadata.file_type().is_symlink() || !destination_metadata.is_dir() {
+        return Err(PackError::new(
+            "export destination must be a regular directory",
+        ));
+    }
+    let destination_root = fs::canonicalize(destination_directory)?;
+    let destination = destination_root.join(id);
+    if fs::symlink_metadata(&destination).is_ok() {
+        return Err(PackError::new(format!(
+            "export destination already contains {id}"
+        )));
+    }
+
+    fs::create_dir(&destination)?;
+    let result = (|| {
+        fs::write(destination.join(MANIFEST_FILE), &pack.manifest_bytes)?;
+        for relative in &pack.assets {
+            let target = destination.join(relative);
+            if let Some(parent) = target.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::copy(secure_file(&pack.root, relative)?, target)?;
+        }
+        Ok::<(), PackError>(())
+    })();
+    if let Err(error) = result {
+        let _ = fs::remove_dir_all(&destination);
+        return Err(error);
+    }
+    Ok(destination)
+}
+
 fn validate_pack_internal(source: &Path) -> Result<ValidatedPack, PackError> {
     let source_metadata = fs::symlink_metadata(source)
         .map_err(|error| PackError::new(format!("cannot access pack directory: {error}")))?;
@@ -253,6 +344,17 @@ fn validate_pack_internal(source: &Path) -> Result<ValidatedPack, PackError> {
     }
     let atlas_path = secure_file(&root, &manifest.atlas.file)?;
     validate_png_dimensions(&atlas_path, &manifest.atlas)?;
+    if let Some(directional) = &manifest.directional {
+        if let Some(group) = &directional.horizontal {
+            validate_png_dimensions(&secure_file(&root, &group.atlas.file)?, &group.atlas)?;
+        }
+        for group in [&directional.vertical, &directional.diagonal]
+            .into_iter()
+            .flatten()
+        {
+            validate_png_dimensions(&secure_file(&root, &group.atlas.file)?, &group.atlas)?;
+        }
+    }
 
     Ok(ValidatedPack {
         root,
@@ -282,64 +384,53 @@ fn validate_manifest(manifest: &PetPackManifest) -> Result<BTreeSet<String>, Pac
         require_text(&author.name, "author name")?;
     }
 
-    safe_relative_path(&manifest.atlas.file)?;
-    if extension(&manifest.atlas.file).as_deref() != Some("png") {
-        return Err(PackError::new("atlas.file must be a PNG"));
-    }
-    if manifest.atlas.columns == 0
-        || manifest.atlas.rows == 0
-        || manifest.atlas.frame_width == 0
-        || manifest.atlas.frame_height == 0
-    {
-        return Err(PackError::new(
-            "atlas dimensions and grid values must be positive",
-        ));
-    }
-    manifest
-        .atlas
-        .columns
-        .checked_mul(manifest.atlas.frame_width)
-        .ok_or_else(|| PackError::new("atlas width overflows"))?;
-    manifest
-        .atlas
-        .rows
-        .checked_mul(manifest.atlas.frame_height)
-        .ok_or_else(|| PackError::new("atlas height overflows"))?;
+    validate_atlas(&manifest.atlas, "atlas")?;
 
     for required in REQUIRED_ANIMATIONS {
         if !manifest.animations.contains_key(required) {
             return Err(PackError::new(format!("animations.{required} is required")));
         }
     }
-    for (name, animation) in &manifest.animations {
-        if !is_action_name(name) {
-            return Err(PackError::new(format!(
-                "animation name {name:?} is invalid"
-            )));
+    validate_animations(&manifest.animations, &manifest.atlas, "animations")?;
+
+    let mut assets = BTreeSet::from([manifest.atlas.file.clone()]);
+    if let Some(directional) = &manifest.directional {
+        if let Some(group) = &directional.horizontal {
+            validate_atlas(&group.atlas, "directional.horizontal.atlas")?;
+            validate_animations(
+                &group.animations,
+                &group.atlas,
+                "directional.horizontal.animations",
+            )?;
+            assets.insert(group.atlas.file.clone());
         }
-        if animation.row >= manifest.atlas.rows {
-            return Err(PackError::new(format!(
-                "animations.{name}.row must reference an atlas row"
-            )));
-        }
-        if animation.frames.is_empty()
-            || animation
-                .frames
-                .iter()
-                .any(|frame| *frame >= manifest.atlas.columns)
-        {
-            return Err(PackError::new(format!(
-                "animations.{name}.frames must reference atlas columns"
-            )));
-        }
-        if !(40..=60_000).contains(&animation.frame_duration_ms) {
-            return Err(PackError::new(format!(
-                "animations.{name}.frameDurationMs must be from 40 to 60000"
-            )));
+        for (group_name, group) in [
+            ("vertical", &directional.vertical),
+            ("diagonal", &directional.diagonal),
+        ] {
+            let Some(group) = group else { continue };
+            validate_atlas(&group.atlas, &format!("directional.{group_name}.atlas"))?;
+            if group.animations.is_empty()
+                || group
+                    .animations
+                    .keys()
+                    .any(|direction| !matches!(direction.as_str(), "up" | "down"))
+            {
+                return Err(PackError::new(format!(
+                    "directional.{group_name}.animations must define only up or down"
+                )));
+            }
+            for (direction, animations) in &group.animations {
+                validate_animations(
+                    animations,
+                    &group.atlas,
+                    &format!("directional.{group_name}.animations.{direction}"),
+                )?;
+            }
+            assets.insert(group.atlas.file.clone());
         }
     }
 
-    let mut assets = BTreeSet::from([manifest.atlas.file.clone()]);
     for (name, sound) in &manifest.sounds {
         if !is_action_name(name) {
             return Err(PackError::new(format!("sound name {name:?} is invalid")));
@@ -384,6 +475,59 @@ fn validate_manifest(manifest: &PetPackManifest) -> Result<BTreeSet<String>, Pac
         }
     }
     Ok(assets)
+}
+
+fn validate_atlas(atlas: &PackAtlas, field: &str) -> Result<(), PackError> {
+    safe_relative_path(&atlas.file)?;
+    if extension(&atlas.file).as_deref() != Some("png") {
+        return Err(PackError::new(format!("{field}.file must be a PNG")));
+    }
+    if atlas.columns == 0 || atlas.rows == 0 || atlas.frame_width == 0 || atlas.frame_height == 0 {
+        return Err(PackError::new(format!(
+            "{field} dimensions and grid values must be positive"
+        )));
+    }
+    atlas
+        .columns
+        .checked_mul(atlas.frame_width)
+        .ok_or_else(|| PackError::new(format!("{field} width overflows")))?;
+    atlas
+        .rows
+        .checked_mul(atlas.frame_height)
+        .ok_or_else(|| PackError::new(format!("{field} height overflows")))?;
+    Ok(())
+}
+
+fn validate_animations(
+    animations: &BTreeMap<String, PackAnimation>,
+    atlas: &PackAtlas,
+    field: &str,
+) -> Result<(), PackError> {
+    for (name, animation) in animations {
+        if !is_action_name(name) {
+            return Err(PackError::new(format!(
+                "{field} contains invalid animation name {name:?}"
+            )));
+        }
+        if animation.row >= atlas.rows {
+            return Err(PackError::new(format!(
+                "{field}.{name}.row must reference an atlas row"
+            )));
+        }
+        if animation.frames.is_empty()
+            || animation.frames.iter().any(|frame| *frame >= atlas.columns)
+        {
+            return Err(PackError::new(format!(
+                "{field}.{name}.frames must reference atlas columns"
+            )));
+        }
+        if !(40..=60_000).contains(&animation.frame_duration_ms) {
+            return Err(PackError::new(format!(
+                "{field}.{name}.frameDurationMs must be from 40 to 60000"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn validate_pack_id(id: &str) -> Result<(), PackError> {
@@ -708,9 +852,61 @@ mod tests {
         assert!(!target.join("not-referenced.txt").exists());
         assert_eq!(list_installed_packs(&installed).unwrap().len(), 1);
 
+        let export_root = temporary.0.join("export");
+        fs::create_dir(&export_root).unwrap();
+        let exported = export_installed_pack(&installed, "example.test-pet", &export_root).unwrap();
+        assert!(exported.join(MANIFEST_FILE).is_file());
+        assert!(exported.join("assets/atlas.png").is_file());
+        assert!(!exported.join("not-referenced.txt").exists());
+
         remove_installed_pack(&installed, "example.test-pet").unwrap();
         assert!(!target.exists());
         assert!(installed.is_dir());
+    }
+
+    #[test]
+    fn validates_and_installs_directional_atlases() {
+        let temporary = TestDirectory::new();
+        let source = temporary.0.join("source-directional");
+        let installed = temporary.0.join("installed-directional");
+        let mut value = manifest();
+        value["directional"] = json!({
+            "vertical": {
+                "atlas": {
+                    "file": "assets/directional.png",
+                    "columns": 2,
+                    "rows": 2,
+                    "frameWidth": 8,
+                    "frameHeight": 8
+                },
+                "animations": {
+                    "up": {
+                        "walk": { "row": 0, "frames": [0, 1], "frameDurationMs": 120, "loop": true },
+                        "run": { "row": 1, "frames": [0, 1], "frameDurationMs": 80, "loop": true }
+                    }
+                }
+            }
+        });
+        value["license"]["assets"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({
+                "path": "assets/directional.png",
+                "creator": "Test Author",
+                "source": "https://example.com/directional",
+                "spdx": "MIT",
+                "modifications": "Unmodified"
+            }));
+        write_pack(&source, &value);
+        let mut directional_png = fs::read(source.join("assets/atlas.png")).unwrap();
+        directional_png[20..24].copy_from_slice(&16_u32.to_be_bytes());
+        fs::write(source.join("assets/directional.png"), directional_png).unwrap();
+
+        validate_pack(&source).unwrap();
+        install_pack(&source, &installed).unwrap();
+        assert!(installed
+            .join("example.test-pet/assets/directional.png")
+            .is_file());
     }
 
     #[test]

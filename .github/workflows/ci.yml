@@ -50,6 +50,12 @@ jobs:
       - name: Check JavaScript
         run: npm run check:js
 
+      - name: Validate bundled pet packs
+        run: npm run check:pets
+
+      - name: Test JavaScript
+        run: npm run test:js
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
 
@@ -99,3 +105,35 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 14
+
+  compile-linux:
+    name: Compile Linux (investigation only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux webview prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Compile native Linux binary without packaging
+        run: npm run build -- --no-bundle --ci

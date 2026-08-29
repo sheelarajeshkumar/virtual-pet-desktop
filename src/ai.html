@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Companion</title>
+    <link rel="stylesheet" href="ai.css" />
+    <script src="ai.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">OPTIONAL · LOCAL · PRIVATE</p>
+      <div class="heading">
+        <div>
+          <h1>AI Companion</h1>
+          <p>Uses your local Ollama server. Core pet behavior never depends on AI.</p>
+        </div>
+        <label class="master" for="enabled">
+          <input id="enabled" type="checkbox" />
+          Enabled
+        </label>
+      </div>
+
+      <details id="configuration">
+        <summary>LOCAL AI SETTINGS</summary>
+        <form id="settings-form">
+          <label for="endpoint">Ollama endpoint</label>
+          <input
+            id="endpoint"
+            type="url"
+            value="http://127.0.0.1:11434"
+            spellcheck="false"
+            required
+          />
+
+          <label for="model">Model</label>
+          <input id="model" value="llama3.2" maxlength="80" spellcheck="false" required />
+
+          <div class="switches">
+            <label><input id="memory-enabled" type="checkbox" /> Remember recent chats locally</label>
+            <label><input id="proactive-enabled" type="checkbox" /> Proactive suggestions</label>
+            <label><input id="voice-output" type="checkbox" /> Read replies aloud</label>
+          </div>
+
+          <label for="cooldown">Suggestion cooldown</label>
+          <select id="cooldown">
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="120">2 hours</option>
+            <option value="240">4 hours</option>
+          </select>
+
+          <div class="settings-actions">
+            <button type="submit">SAVE SETTINGS</button>
+            <button id="clear-memory" class="secondary" type="button">CLEAR MEMORY</button>
+          </div>
+        </form>
+      </details>
+
+      <section id="conversation" aria-labelledby="conversation-title">
+        <h2 id="conversation-title">CHAT</h2>
+        <div id="messages" role="log" aria-live="polite" aria-relevant="additions">
+          <p class="empty">Enable AI Companion, then ask your pet something.</p>
+        </div>
+
+        <form id="chat-form">
+          <div class="context-row">
+            <label for="mood">Mood</label>
+            <select id="mood">
+              <option value="">Auto from care state</option>
+              <option value="happy">Happy</option>
+              <option value="calm">Calm</option>
+              <option value="playful">Playful</option>
+              <option value="tired">Tired</option>
+              <option value="sad">Sad</option>
+              <option value="stressed">Stressed</option>
+            </select>
+            <label for="context">Extra context</label>
+            <input id="context" maxlength="280" placeholder="Optional: visitors, quiet time…" />
+          </div>
+          <label class="sr-only" for="message">Message</label>
+          <div class="composer">
+            <textarea
+              id="message"
+              maxlength="2000"
+              rows="2"
+              placeholder="Talk to your companion…"
+              required
+            ></textarea>
+            <button id="send" type="submit">SEND</button>
+          </div>
+        </form>
+      </section>
+
+      <p class="privacy">
+        No telemetry, cloud keys, or automatic pet actions. Suggested actions run only after you
+        confirm them.
+      </p>
+      <p id="status" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

@@ -67,6 +67,46 @@
       "loop": true
     }
   },
+  "directional": {
+    "vertical": {
+      "atlas": {
+        "file": "assets/dog-directional-atlas.png",
+        "columns": 4,
+        "rows": 4,
+        "frameWidth": 224,
+        "frameHeight": 224
+      },
+      "animations": {
+        "down": {
+          "walk": { "row": 0, "frames": [0, 1, 2, 3], "frameDurationMs": 120, "loop": true },
+          "run": { "row": 1, "frames": [0, 1, 2, 3], "frameDurationMs": 85, "loop": true }
+        },
+        "up": {
+          "walk": { "row": 2, "frames": [0, 1, 2, 3], "frameDurationMs": 120, "loop": true },
+          "run": { "row": 3, "frames": [0, 1, 2, 3], "frameDurationMs": 85, "loop": true }
+        }
+      }
+    },
+    "diagonal": {
+      "atlas": {
+        "file": "assets/dog-diagonal-atlas.png",
+        "columns": 4,
+        "rows": 4,
+        "frameWidth": 224,
+        "frameHeight": 224
+      },
+      "animations": {
+        "down": {
+          "walk": { "row": 0, "frames": [0, 1, 2, 3], "frameDurationMs": 120, "loop": true },
+          "run": { "row": 1, "frames": [0, 1, 2, 3], "frameDurationMs": 85, "loop": true }
+        },
+        "up": {
+          "walk": { "row": 2, "frames": [0, 1, 2, 3], "frameDurationMs": 120, "loop": true },
+          "run": { "row": 3, "frames": [0, 1, 2, 3], "frameDurationMs": 85, "loop": true }
+        }
+      }
+    }
+  },
   "sounds": {
     "bark": {
       "file": "sounds/bark.wav",

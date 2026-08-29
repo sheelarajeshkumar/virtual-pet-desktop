@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Core permissions for the pet and settings windows.",
-  "windows": ["pet", "settings", "care", "packs"],
+  "windows": ["pet", "settings", "care", "packs", "pack-preview", "data", "extensions", "ai"],
   "permissions": ["core:default", "dialog:default", "notification:default"]
 }

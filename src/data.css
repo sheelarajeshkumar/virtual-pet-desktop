@@ -1,0 +1,121 @@
+:root {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color: #2b1b11;
+  background: #fff1d6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(420px 220px at 100% 0, #ffd49a, transparent 60%),
+    #fff1d6;
+}
+
+main {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.eyebrow,
+h1,
+h2,
+label,
+button {
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #dc4c00;
+  font-size: 11px;
+}
+
+h1 {
+  margin: -8px 0 0;
+  font-size: 24px;
+}
+
+section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 3px solid #241611;
+  background: rgb(255 253 246 / 75%);
+}
+
+h2,
+p {
+  margin: 0;
+}
+
+h2,
+label {
+  font-size: 12px;
+}
+
+p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button,
+select {
+  min-height: 38px;
+  border: 3px solid #241611;
+  font: inherit;
+}
+
+button {
+  padding: 7px 13px;
+  color: white;
+  background: #2f66f0;
+  box-shadow: 3px 3px 0 #241611;
+  cursor: pointer;
+}
+
+button.secondary {
+  color: #241611;
+  background: #fffdf6;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+select {
+  width: 100%;
+  padding: 7px 10px;
+  background: #fffdf6;
+}
+
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid #ff7a1a;
+  outline-offset: 2px;
+}
+
+#message {
+  min-height: 36px;
+  font-weight: 700;
+}
+
+#message[data-state="error"] {
+  color: #c0392b;
+}
+
+#message[data-state="success"] {
+  color: #176b36;
+}

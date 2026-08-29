@@ -12,6 +12,8 @@ const dayNightEnabledInput = document.querySelector("#day-night-enabled");
 const careEnabledInput = document.querySelector("#care-enabled");
 const careNotificationsInput = document.querySelector("#care-notifications");
 const careDifficultyInput = document.querySelector("#care-difficulty");
+const visibilityShortcutInput = document.querySelector("#visibility-shortcut");
+const toggleVisibilityButton = document.querySelector("#toggle-visibility");
 const message = document.querySelector("#message");
 const submitButton = form.querySelector('button[type="submit"]');
 
@@ -52,7 +54,10 @@ async function load() {
         return option;
       }),
     );
-    const settings = await invoke("get_settings");
+    const [settings, visibility] = await Promise.all([
+      invoke("get_settings"),
+      invoke("get_visibility_settings"),
+    ]);
     nameInput.value = settings.name;
     kindInput.value = settings.kind;
     petSizeInput.value = settings.petSize;
@@ -63,6 +68,7 @@ async function load() {
     careEnabledInput.checked = settings.careEnabled;
     careNotificationsInput.checked = settings.careNotifications;
     careDifficultyInput.value = settings.careDifficulty;
+    visibilityShortcutInput.value = visibility.shortcut;
     updateRangeValues();
     updateCareState();
     nameInput.focus();
@@ -71,6 +77,15 @@ async function load() {
     setMessage(`Could not load settings: ${String(error)}`, "error");
   }
 }
+
+toggleVisibilityButton.addEventListener("click", async () => {
+  try {
+    const visibility = await invoke("toggle_pet_visibility");
+    setMessage(`Pet is now ${visibility.visibility}.`, "success");
+  } catch (error) {
+    setMessage(`Could not change visibility: ${String(error)}`, "error");
+  }
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -83,6 +98,7 @@ form.addEventListener("submit", async (event) => {
       if (!permitted) permitted = (await notifications.requestPermission()) === "granted";
       if (!permitted) throw new Error("Notification permission was not granted.");
     }
+    await invoke("save_visibility_shortcut", { shortcut: visibilityShortcutInput.value.trim() });
     await invoke("save_settings", {
       settings: {
         name: nameInput.value.trim(),

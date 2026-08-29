@@ -8,5 +8,10 @@
     "id": "cat",
     "name": "Fluffy Cat",
     "manifest": "pet-packs/cat/pet-pack.json"
+  },
+  {
+    "id": "fox",
+    "name": "Red Fox",
+    "manifest": "pet-packs/fox/pet-pack.json"
   }
 ]

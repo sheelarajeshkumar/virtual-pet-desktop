@@ -25,6 +25,7 @@
             <select id="kind" name="kind">
               <option value="puppy">Puppy</option>
               <option value="cat">Cat</option>
+              <option value="fox">Red Fox</option>
             </select>
           </div>
 
@@ -103,6 +104,22 @@
               <option value="hard">Hard</option>
             </select>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>VISIBILITY</legend>
+          <div class="field">
+            <label for="visibility-shortcut">SHORTCUT</label>
+            <input
+              id="visibility-shortcut"
+              maxlength="64"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="shortcut-help"
+            />
+          </div>
+          <p id="shortcut-help" class="help">Use a modifier and key, for example CommandOrControl+Shift+P.</p>
+          <button id="toggle-visibility" type="button">HIDE / SHOW PET</button>
         </fieldset>
 
         <button type="submit">SAVE</button>

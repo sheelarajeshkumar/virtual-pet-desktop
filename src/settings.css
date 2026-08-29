@@ -161,6 +161,13 @@ select:focus-visible {
   color: #176b36;
 }
 
+.help {
+  margin: -2px 0 0 115px;
+  color: #6f5547;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 @media (max-width: 380px) {
   main {
     padding: 14px;
@@ -173,5 +180,9 @@ select:focus-visible {
 
   .checkbox-field {
     grid-template-columns: 20px 1fr;
+  }
+
+  .help {
+    margin-left: 0;
   }
 }

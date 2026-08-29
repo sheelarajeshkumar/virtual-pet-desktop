@@ -2,7 +2,7 @@
 
 ## Bundled atlas contract
 
-The bundled puppy and cat atlases are transparent 4-column × 8-row images. Each source frame is square. The manifest is authoritative for custom pack dimensions, frame order, and timing.
+The bundled puppy, cat and fox base atlases are transparent 4-column × 8-row images. Each source frame is square. The manifest is authoritative for custom pack dimensions, frame order, and timing.
 
 | Row | Behavior | Frames |
 | --- | --- | --- |
@@ -15,7 +15,17 @@ The bundled puppy and cat atlases are transparent 4-column × 8-row images. Each
 | 6 | Attention | 4 |
 | 7 | Sniff | 4 |
 
-The renderer mirrors right-facing art for left-facing movement. Do not include both directions unless a future art style requires asymmetric frames.
+The renderer mirrors right-facing art for left-facing movement. Do not include duplicate left-facing atlases unless a future format explicitly supports asymmetric frames.
+
+## Directional movement
+
+For pets that move around the desktop, use three camera groups:
+
+- `horizontal`: side profile. The base atlas already fills this role unless overridden.
+- `vertical`: `up` shows the back of the pet; `down` shows its face and chest.
+- `diagonal`: three-quarter rear (`up`) and three-quarter front (`down`) views.
+
+Keep the same body size, foot baseline, palette, outline, and frame cadence across atlases. The puppy's vertical and diagonal atlases are the reference layout: down walk/run in rows 0–1 and up walk/run in rows 2–3. The manifest is authoritative, so another row layout is valid.
 
 ## Visual requirements
 
@@ -38,10 +48,11 @@ The renderer mirrors right-facing art for left-facing movement. Do not include b
 
 Before submitting an atlas:
 
-1. Confirm width is divisible by 4 and height by 8.
-2. Confirm all cells have identical dimensions.
+1. Confirm each atlas pixel size exactly matches its declared rows, columns, and frame size.
+2. Confirm all cells in an atlas have identical dimensions.
 3. Confirm alpha is preserved.
 4. Confirm no frame is clipped when mirrored.
-5. Record the creator, source, tools, modifications, and license in the pack manifest and `ASSETS.md`.
+5. Check back/front and all four diagonals in **Preview pet packs…** from the tray.
+6. Record the creator, source, tools, modifications, and license in the pack manifest and `ASSETS.md`.
 
 Do not commit layered source files unless they are useful and reasonably sized. Link to large source packages from the pull request when necessary.

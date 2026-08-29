@@ -1,6 +1,6 @@
 # Windows testing
 
-Use this checklist on both Windows 10 and Windows 11 before a release. Test the unsigned CI artifact for pull requests and a signed installer for public releases.
+Use this checklist on both Windows 10 and Windows 11 before a release. Test the unsigned CI artifact for pull requests and a signed installer from the protected release draft for public releases. CI can package and validate Authenticode signatures; it cannot verify real desktop layering, audio devices, multi-monitor behavior, or user-notification delivery.
 
 ## Test setup
 
@@ -8,6 +8,7 @@ Use this checklist on both Windows 10 and Windows 11 before a release. Test the 
 - Extract the artifact, record the Windows edition/build, display resolutions and scaling values.
 - Run on a normal user account. Windows may warn about unsigned development builds; do not publish them as releases.
 - Repeat the installation checks on a clean Windows VM or machine when possible.
+- Record the CI run URL and installer SHA-256 in the release evidence. Do not mark the GitHub draft public until this checklist is complete.
 
 ## Manual checklist
 
@@ -35,6 +36,7 @@ Use this checklist on both Windows 10 and Windows 11 before a release. Test the 
 
 - [ ] The paw icon appears in the notification area, including the hidden-icons overflow.
 - [ ] Every tray action performs the matching behavior: Auto, Call over, Play, Bark, Sleep and Settings.
+- [ ] The default `Ctrl+Shift+P` shortcut and Settings visibility button both hide and restore the pet.
 - [ ] Bark plays only when Bark is selected.
 - [ ] Sleep sends the pet to its hut, starts sleep animation/audio and Wake returns it to normal behavior.
 - [ ] Closing Settings does not quit the pet.
@@ -52,10 +54,20 @@ Use this checklist on both Windows 10 and Windows 11 before a release. Test the 
 
 ### Pet packs
 
-- [ ] Puppy and cat appear in the pet selector and load without a network connection.
+- [ ] Puppy, cat and red fox appear in the pet selector and load without a network connection.
 - [ ] Switch between packs repeatedly; the correct atlas, bark and sleep audio load every time.
 - [ ] Idle, walk, run, play, bark and sleep use valid frames without flicker or transparent flashes.
 - [ ] A missing or invalid pack fails safely and does not prevent a bundled valid pack from loading.
+- [ ] Preview pet packs shows side, front, back and diagonal choices without loading arbitrary URLs.
+- [ ] Backup export/import restores settings, inventory and care; pack export copies only validated referenced assets.
+- [ ] A sample behavior extension runs only allowlisted actions and returns to Auto.
+
+### Optional AI
+
+- [ ] Core movement, care, packs and audio work with AI disabled and with Ollama absent.
+- [ ] Enabling AI accepts only a loopback Ollama endpoint and failure does not freeze pet movement.
+- [ ] Suggested pet actions run only after pressing the confirmation button.
+- [ ] Memory, proactive suggestions and voice output can each be disabled independently.
 
 ### Audio and notifications
 
@@ -79,3 +91,7 @@ Use this checklist on both Windows 10 and Windows 11 before a release. Test the 
 ## Report failures
 
 Include the app commit, Windows edition/build, monitor layout, scaling, installation type, reproduction steps, expected and actual behavior, logs, and a short screen recording when the failure is visual. Never attach API keys, personal paths or other secrets.
+
+## Release evidence gate
+
+Attach this completed checklist, the CI run URL, installer SHA-256, and a maintainer approval to the release discussion or tracking issue. A successful unsigned or signed CI build is necessary but does not substitute for this Windows 10/11 GUI test.

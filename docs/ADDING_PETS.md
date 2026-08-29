@@ -45,12 +45,16 @@ The validator rejects unsafe paths, missing assets, incorrect PNG dimensions, in
 
 Run `npm run dev`, select the pet in Settings, and verify idle, walk, run, bark, play, sleep, attention, and sniff/groom behavior in both facing directions. Confirm sounds start only on state entry and obey the volume setting.
 
+Open **Preview pet packs…** from the tray to inspect exact frames for side, front, back, and diagonal movement. The preview only lists manifests from the validated bundled catalog or app-managed installed packs; it does not load arbitrary URLs.
+
 ## Install a community pack
 
 To test a pack without bundling it, open the tray menu, choose **Pet packs…**, then import the folder containing `pet-pack.json`. The app validates paths, assets, atlas dimensions, required animations, and license records before copying the referenced files into its private app-data directory. Select the installed pack in Settings.
 
-Community pack IDs must use a reverse-domain-style value such as `example.my-pet`. Removing the active community pack safely switches the pet back to Puppy. Bundled Puppy and Cat packs cannot be removed from this screen.
+Community pack IDs must use a reverse-domain-style value such as `example.my-pet`. Removing the active community pack safely switches the pet back to Puppy. Bundled Puppy, Cat and Red Fox packs cannot be removed from this screen.
 
 ## Current boundary
 
 The built-in `cat` ID uses the cat movement profile. All other IDs currently use the default pet movement profile. Per-pack motion profiles should be proposed separately before changing the manifest schema.
+
+Pack manifests are intentionally declarative and cannot run code. Propose new routines as bounded sequences of existing engine actions with duration and repeat limits; do not add scripts to a pack.

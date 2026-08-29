@@ -1,0 +1,63 @@
+:root {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color: #2b1b11;
+  background: #fff1d6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(460px 260px at 100% 0, #ffd49a, transparent 60%), #fff1d6;
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(270px, 0.8fr);
+  gap: 16px;
+  padding: 20px;
+}
+
+header, #details, #message { grid-column: 1 / -1; }
+h1 { margin: 5px 0; }
+header p { margin: 0; font-size: 12px; }
+.eyebrow { color: #dc4c00; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+
+.preview {
+  display: grid;
+  place-items: center;
+  min-height: 340px;
+  border: 3px solid #241611;
+  background-color: #fffdf6;
+  background-image:
+    linear-gradient(45deg, #eadfcf 25%, transparent 25%),
+    linear-gradient(-45deg, #eadfcf 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eadfcf 75%),
+    linear-gradient(-45deg, transparent 75%, #eadfcf 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+  box-shadow: 4px 4px 0 #241611;
+}
+
+canvas { width: 320px; height: 320px; image-rendering: pixelated; }
+.controls { display: grid; align-content: start; gap: 13px; }
+label, .frame-control { display: grid; gap: 5px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+select, input, button {
+  min-height: 38px;
+  border: 2px solid #241611;
+  color: #241611;
+  background: #fffdf6;
+  font: inherit;
+}
+select { width: 100%; padding: 6px; }
+.frame-control { grid-template-columns: auto 38px 1fr 38px auto; align-items: center; }
+.frame-control span { grid-column: 1 / -1; }
+button { cursor: pointer; font-weight: 900; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #2f66f0; outline-offset: 2px; }
+#details, #message { min-height: 18px; margin: 0; font-size: 11px; }
+#message[data-state="error"] { color: #c0392b; font-weight: 800; }
+
+@media (max-width: 650px) {
+  main { grid-template-columns: 1fr; }
+  header, #details, #message { grid-column: auto; }
+}

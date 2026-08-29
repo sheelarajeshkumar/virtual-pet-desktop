@@ -25,6 +25,7 @@ Validation is intentionally dependency-free so contributors only need Node.js. A
 | `authors` | Yes | Non-empty array of objects with a `name` |
 | `atlas` | Yes | PNG file plus positive `columns`, `rows`, `frameWidth`, and `frameHeight` |
 | `animations` | Yes | Named animation definitions; `idle`, `walk`, `run`, and `sleep` are required |
+| `directional` | No | Direction-specific horizontal, vertical, or diagonal atlas groups |
 | `sounds` | No | Named local audio definitions |
 | `license` | Yes | Pack SPDX identifier and per-asset provenance |
 
@@ -39,7 +40,37 @@ Each animation defines:
 - `frameDurationMs`: duration of each frame, from 40 to 60,000 milliseconds.
 - `loop`: whether playback repeats.
 
-The renderer may mirror the atlas for left-facing movement, so packs do not need duplicate directional rows.
+The base atlas is also the fallback for every direction, so existing packs remain valid. The renderer mirrors right-facing art for left-facing movement.
+
+### Optional directional animation
+
+Use `directional` when a side-view frame would look wrong while moving toward or away from the viewer. Each group owns a normal atlas definition. `horizontal.animations` maps behavior names directly; `vertical` and `diagonal` nest behaviors below `up` and `down`. Missing groups or behaviors fall back to the base atlas.
+
+```json
+"directional": {
+  "vertical": {
+    "atlas": {
+      "file": "assets/vertical.png",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 224,
+      "frameHeight": 224
+    },
+    "animations": {
+      "down": {
+        "walk": { "row": 0, "frames": [0, 1, 2, 3], "frameDurationMs": 120, "loop": true },
+        "run": { "row": 1, "frames": [0, 1, 2, 3], "frameDurationMs": 85, "loop": true }
+      },
+      "up": {
+        "walk": { "row": 2, "frames": [0, 1, 2, 3], "frameDurationMs": 120, "loop": true },
+        "run": { "row": 3, "frames": [0, 1, 2, 3], "frameDurationMs": 85, "loop": true }
+      }
+    }
+  }
+}
+```
+
+`diagonal` has the same `up`/`down` shape. A `horizontal` override uses `"animations": { "walk": {...}, "run": {...} }`. Every directional atlas must be a safe local PNG, match its declared grid dimensions, and have a `license.assets` entry.
 
 Catalog entries use a short lowercase `id`, display `name`, and pack-relative `manifest` URL. The current movement engine gives the built-in `cat` ID the cat motion profile and uses the default pet profile for other IDs.
 
@@ -51,7 +82,7 @@ Each sound has a `file`, `volume` between `0` and `1`, and Boolean `loop`. Suppo
 
 All paths are POSIX-style and relative to the pack directory. Absolute paths, backslashes, empty segments, and `..` traversal are rejected. Symlinks that resolve outside the pack are also rejected.
 
-Every referenced atlas or sound must have exactly one entry in `license.assets` containing:
+Every referenced base/directional atlas or sound must have exactly one entry in `license.assets` containing:
 
 - `path`: the same relative asset path.
 - `creator`: original creator or project.
@@ -105,3 +136,7 @@ node scripts/validate-pet-pack.mjs --self-test
 ```
 
 The self-test validates the bundled puppy and confirms that unsafe traversal and invalid frame definitions are rejected. `npm run check:pets` validates every bundled pack used by the application.
+
+## Safe extension boundary
+
+Pet packs are data, not plugins: manifests cannot contain JavaScript or executable commands. Community routines use a separate bounded JSON format with native validation; see [BEHAVIOR_EXTENSIONS.md](BEHAVIOR_EXTENSIONS.md). Unknown pack metadata remains inert.

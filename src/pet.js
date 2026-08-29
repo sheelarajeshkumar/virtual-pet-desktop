@@ -1,9 +1,7 @@
 const canvas = document.querySelector("#pet");
 const ctx = canvas.getContext("2d", { alpha: true });
 const invoke = window.__TAURI__.core.invoke;
-const dogAtlas = new Image();
-const dogDirectionalAtlas = new Image();
-const dogDiagonalAtlas = new Image();
+const atlasImages = new Map();
 const PET_SIZE = 224;
 const PET_SCALES = { small: 0.72, medium: 0.86, large: 1 };
 const CARE_NOTIFICATION_KEY = "virtual-pet:last-care-notification";
@@ -25,8 +23,34 @@ const barkSound = new Audio();
 barkSound.preload = "auto";
 const snoreSound = new Audio();
 snoreSound.preload = "auto";
-dogDirectionalAtlas.src = "pet-packs/puppy/assets/dog-directional-atlas.png";
-dogDiagonalAtlas.src = "pet-packs/puppy/assets/dog-diagonal-atlas.png";
+
+function configureSound(audio, sound) {
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.loop = false;
+  if (sound) {
+    audio.src = sound.src;
+    audio.loop = sound.loop;
+  }
+  audio.load();
+}
+
+function atlasImage(atlas) {
+  let image = atlasImages.get(atlas.src);
+  if (image) return image;
+  image = new Image();
+  image.addEventListener("load", () => {
+    if (lastSnapshot) render(lastSnapshot);
+  });
+  image.src = atlas.src;
+  atlasImages.set(atlas.src, image);
+  return image;
+}
+
+function preloadPack(pack) {
+  atlasImage(pack.atlas);
+  for (const group of Object.values(pack.directional)) atlasImage(group.atlas);
+}
 
 async function activatePack(kind) {
   if (kind === activeKind) return;
@@ -44,19 +68,12 @@ async function activatePack(kind) {
     const pack = await window.VirtualPetPack.load(manifestUrl);
     if (activeKind !== kind) return;
     activePack = pack;
-    dogAtlas.src = pack.atlas.src;
-    const bark = pack.sounds.bark;
-    const sleep = pack.sounds.sleep;
-    if (bark) {
-      barkSound.src = bark.src;
-      barkSound.loop = bark.loop;
-    }
-    if (sleep) {
-      snoreSound.src = sleep.src;
-      snoreSound.loop = sleep.loop;
-    }
+    preloadPack(pack);
+    configureSound(barkSound, pack.sounds.bark);
+    configureSound(snoreSound, pack.sounds.sleep);
   } catch (error) {
     console.error(`Could not load the ${kind} pet pack`, error);
+    if (activeKind === kind) activeKind = undefined;
   }
 }
 
@@ -220,25 +237,15 @@ function packFrame(snapshot, animation) {
   return animation.frames[boundedIndex];
 }
 
-function drawDogAtlas(snapshot) {
-  const animation =
-    activePack.animations[snapshot.behavior] ?? activePack.animations.idle;
+function drawPackAtlas(snapshot) {
+  const { atlas, animation } = window.VirtualPetPack.resolveAnimation(
+    activePack,
+    snapshot.behavior,
+    snapshot.travelDirection,
+  );
+  const image = atlasImage(atlas);
+  if (!image.complete || !image.naturalWidth) return false;
   const frame = packFrame(snapshot, animation);
-  const vertical = ["up", "down"].includes(snapshot.travelDirection);
-  const diagonal = ["up-diagonal", "down-diagonal"].includes(snapshot.travelDirection);
-  const directionalRow =
-    snapshot.kind === "puppy" &&
-    ["walk", "run"].includes(snapshot.behavior) &&
-    ((vertical && dogDirectionalAtlas.complete && dogDirectionalAtlas.naturalWidth) ||
-      (diagonal && dogDiagonalAtlas.complete && dogDiagonalAtlas.naturalWidth))
-      ? (snapshot.travelDirection.startsWith("up") ? 2 : 0) +
-        (snapshot.behavior === "run" ? 1 : 0)
-      : null;
-  const atlas =
-    directionalRow === null ? dogAtlas : diagonal ? dogDiagonalAtlas : dogDirectionalAtlas;
-  const row = directionalRow ?? animation.row;
-  const sourceWidth = directionalRow === null ? activePack.atlas.frameWidth : 224;
-  const sourceHeight = directionalRow === null ? activePack.atlas.frameHeight : 224;
   const inset = (canvas.width - PET_SIZE) / 2;
 
   if (snapshot.behavior === "sleep" && snapshot.kind === "puppy") {
@@ -247,11 +254,11 @@ function drawDogAtlas(snapshot) {
     dogHouseDoorPath();
     ctx.clip();
     ctx.drawImage(
-      dogAtlas,
-      frame * sourceWidth,
-      row * sourceHeight,
-      sourceWidth,
-      sourceHeight,
+      image,
+      frame * atlas.frameWidth,
+      animation.row * atlas.frameHeight,
+      atlas.frameWidth,
+      atlas.frameHeight,
       61,
       111,
       136,
@@ -264,7 +271,7 @@ function drawDogAtlas(snapshot) {
     ctx.fillText("z", 191, 70 - (frame % 2) * 5);
     ctx.font = "bold 25px monospace";
     ctx.fillText("Z", 208, 48 - (frame % 2) * 5);
-    return;
+    return true;
   }
 
   ctx.save();
@@ -274,17 +281,18 @@ function drawDogAtlas(snapshot) {
   }
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
-    atlas,
-    frame * sourceWidth,
-    row * sourceHeight,
-    sourceWidth,
-    sourceHeight,
+    image,
+    frame * atlas.frameWidth,
+    animation.row * atlas.frameHeight,
+    atlas.frameWidth,
+    atlas.frameHeight,
     inset,
     canvas.height - PET_SIZE,
     PET_SIZE,
     PET_SIZE,
   );
   ctx.restore();
+  return true;
 }
 
 function dogHouseDoorPath() {
@@ -395,9 +403,7 @@ function render(snapshot) {
   ctx.scale(scale, scale);
   ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-  if (activePack && dogAtlas.complete && dogAtlas.naturalWidth) {
-    drawDogAtlas(snapshot);
-  } else {
+  if (!activePack || !drawPackAtlas(snapshot)) {
     ctx.imageSmoothingEnabled = false;
     ctx.save();
     ctx.scale(canvas.width / 50, canvas.height / 50);
@@ -425,18 +431,6 @@ function render(snapshot) {
   ctx.restore();
   void maybeNotify(snapshot);
 }
-
-dogAtlas.addEventListener("load", () => {
-  if (lastSnapshot) render(lastSnapshot);
-});
-
-dogDirectionalAtlas.addEventListener("load", () => {
-  if (lastSnapshot) render(lastSnapshot);
-});
-
-dogDiagonalAtlas.addEventListener("load", () => {
-  if (lastSnapshot) render(lastSnapshot);
-});
 
 async function tick() {
   let delay = 250;

@@ -10,22 +10,27 @@ An open-source, cross-platform animated desktop pet built with Tauri. Add pets, 
 
 - Transparent, click-through 128×128 desktop overlay
 - Smooth walk, run, idle, bark, play, sleep, attention, and sniff animations
+- Side, front, back, and diagonal movement with optional directional atlases
 - Cursor following with acceleration and deceleration
 - macOS fullscreen Spaces and mixed-DPI monitor support
 - Native tray controls for Auto, Call over, Play, Bark, Sleep, and Settings
 - One-shot bark action with a real CC0 dog recording
-- Manifest-driven puppy and fluffy-cat pet packs
+- Manifest-driven puppy, fluffy-cat, and red-fox pet packs with an animation preview tool
 - Persistent hunger, energy, happiness, and cleanliness with care actions
 - Persistent food/toy inventory with safe restocking
 - Optional day/night sleep routine and opt-in care notifications
 - Validated install/remove flow for community pet-pack folders
+- Portable settings/care backups and safe community-pack export
+- Bounded JSON behavior extensions that cannot execute code
+- Global hide/show shortcut, configurable from Settings
+- Optional local Ollama companion with contextual chat, opt-in memory, proactive suggestions, voice output, and confirmed actions
 - Configurable pet size, movement speed, sound volume, reduced motion, and care difficulty
 - Persistent pet name, species, appearance, and care settings
 - Lightweight JavaScript canvas renderer with a Rust movement engine
 
 ## Project status
 
-Virtual Pet Desktop is an early community release. Puppy and cat assets load through validated pet-pack manifests, and unpacked community packs can be installed from the tray. Custom movement profiles remain future work.
+Virtual Pet Desktop is an early community release. The offline pet core works independently from the optional local AI companion. Signed public release automation is prepared, while Windows GUI verification and signing still require maintainer hardware and credentials.
 
 ## Requirements
 
@@ -55,7 +60,12 @@ Use the paw icon in the system tray or macOS menu bar to control the pet.
 | Sleep | Walks home and sleeps |
 | Care | Feed, pet, play with, wash, rest, or restock the pet |
 | Pet packs | Installs or removes validated community pack folders |
+| Preview pet packs | Inspects exact side/front/back/diagonal atlas frames |
+| Behaviors | Imports and runs bounded declarative action routines |
+| Backup and export | Backs up local state or exports an installed community pack |
+| AI companion | Configures optional local Ollama chat and confirmed pet actions |
 | Name and pet | Updates appearance, motion, audio, and care settings |
+| Hide/show pet | Toggles the overlay; default shortcut is `CommandOrControl+Shift+P` |
 
 ## Checks
 
@@ -80,8 +90,8 @@ Unsigned development builds are created under `src-tauri/target/release/bundle`.
 | Platform | Status |
 | --- | --- |
 | macOS 10.15+ | Actively developed and tested |
-| Windows 10/11 | Supported; community testing is welcome |
-| Linux | Not currently supported |
+| Windows 10/11 | Supported; the automated package build is ready, manual GUI verification remains required |
+| Linux | Compile investigation only; not a supported release target yet |
 
 ## Contributing
 
@@ -90,14 +100,18 @@ Contributions of code, pixel art, animations, sounds, documentation, testing, an
 - [Architecture](docs/ARCHITECTURE.md)
 - [Adding a pet](docs/ADDING_PETS.md)
 - [Animation and asset guide](docs/ANIMATION_GUIDE.md)
+- [Behavior extensions](docs/BEHAVIOR_EXTENSIONS.md)
+- [Optional AI companion](docs/AI_COMPANION.md)
+- [Release media workflow](docs/MEDIA.md)
 - [Windows test checklist](docs/WINDOWS_TESTING.md)
+- [Linux status](docs/LINUX_STATUS.md)
 - [Roadmap](ROADMAP.md)
 
 Please report security issues privately according to [SECURITY.md](SECURITY.md).
 
 ## Asset credits
 
-The puppy sprite sheets are original project assets. Bark audio is adapted from [Small Dog Barking Behind Door](https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html) by Joseph SARDIN and Axeline T., released under CC0. See [ASSETS.md](ASSETS.md) for details.
+The puppy and fox sprite sheets are original project assets; fox art was created with OpenAI image generation. Bark audio is adapted from [Small Dog Barking Behind Door](https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html) by Joseph SARDIN and Axeline T., released under CC0. See [ASSETS.md](ASSETS.md) and the per-pack asset records for details.
 
 ## License
 

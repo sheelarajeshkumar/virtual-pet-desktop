@@ -3,6 +3,7 @@
 
   const REQUIRED_ANIMATIONS = ["idle", "walk", "sleep"];
   const ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)+$/;
+  const ANIMATION_PATTERN = /^[a-z][a-z0-9-]*$/;
 
   function object(value, field) {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -65,24 +66,27 @@
     return value;
   }
 
-  function normalizeAtlas(value, manifest) {
-    const source = object(value, "atlas");
+  function normalizeAtlas(value, manifest, field = "atlas") {
+    const source = object(value, field);
     return Object.freeze({
-      src: assetUrl(source.file, manifest, "atlas.file"),
-      columns: positiveInteger(source.columns, "atlas.columns"),
-      rows: positiveInteger(source.rows, "atlas.rows"),
-      frameWidth: positiveInteger(source.frameWidth, "atlas.frameWidth"),
-      frameHeight: positiveInteger(source.frameHeight, "atlas.frameHeight"),
+      src: assetUrl(source.file, manifest, `${field}.file`),
+      columns: positiveInteger(source.columns, `${field}.columns`),
+      rows: positiveInteger(source.rows, `${field}.rows`),
+      frameWidth: positiveInteger(source.frameWidth, `${field}.frameWidth`),
+      frameHeight: positiveInteger(source.frameHeight, `${field}.frameHeight`),
     });
   }
 
-  function normalizeAnimations(value, atlas) {
-    const source = object(value, "animations");
+  function normalizeAnimations(value, atlas, field = "animations", required = []) {
+    const source = object(value, field);
     const animations = Object.fromEntries(
       Object.entries(source).map(([name, value]) => {
-        const animation = object(value, `animations.${name}`);
+        if (!ANIMATION_PATTERN.test(name)) {
+          throw new TypeError(`${field} contains invalid animation name ${JSON.stringify(name)}`);
+        }
+        const animation = object(value, `${field}.${name}`);
         if (!Number.isInteger(animation.row) || animation.row < 0 || animation.row >= atlas.rows) {
-          throw new TypeError(`animations.${name}.row must reference an atlas row`);
+          throw new TypeError(`${field}.${name}.row must reference an atlas row`);
         }
         if (
           !Array.isArray(animation.frames) ||
@@ -91,10 +95,10 @@
             (frame) => !Number.isInteger(frame) || frame < 0 || frame >= atlas.columns,
           )
         ) {
-          throw new TypeError(`animations.${name}.frames must reference atlas columns`);
+          throw new TypeError(`${field}.${name}.frames must reference atlas columns`);
         }
         if (typeof animation.loop !== "boolean") {
-          throw new TypeError(`animations.${name}.loop must be a boolean`);
+          throw new TypeError(`${field}.${name}.loop must be a boolean`);
         }
         return [
           name,
@@ -103,17 +107,61 @@
             frames: Object.freeze([...animation.frames]),
             frameDurationMs: positiveInteger(
               animation.frameDurationMs,
-              `animations.${name}.frameDurationMs`,
+              `${field}.${name}.frameDurationMs`,
             ),
             loop: animation.loop,
           }),
         ];
       }),
     );
-    for (const name of REQUIRED_ANIMATIONS) {
-      if (!animations[name]) throw new TypeError(`animations.${name} is required`);
+    for (const name of required) {
+      if (!animations[name]) throw new TypeError(`${field}.${name} is required`);
     }
     return Object.freeze(animations);
+  }
+
+  function normalizeDirectional(value, manifest) {
+    if (value === undefined) return Object.freeze({});
+    const source = object(value, "directional");
+    const directional = {};
+
+    for (const [groupName, groupValue] of Object.entries(source)) {
+      if (!["horizontal", "vertical", "diagonal"].includes(groupName)) {
+        throw new TypeError(`directional.${groupName} is not supported`);
+      }
+      const field = `directional.${groupName}`;
+      const group = object(groupValue, field);
+      const atlas = normalizeAtlas(group.atlas, manifest, `${field}.atlas`);
+      if (groupName === "horizontal") {
+        directional[groupName] = Object.freeze({
+          atlas,
+          animations: normalizeAnimations(group.animations, atlas, `${field}.animations`),
+        });
+        continue;
+      }
+
+      const directions = object(group.animations, `${field}.animations`);
+      const animations = {};
+      for (const direction of ["up", "down"]) {
+        if (directions[direction] !== undefined) {
+          animations[direction] = normalizeAnimations(
+            directions[direction],
+            atlas,
+            `${field}.animations.${direction}`,
+          );
+        }
+      }
+      if (!animations.up && !animations.down) {
+        throw new TypeError(`${field}.animations must define up or down`);
+      }
+      for (const direction of Object.keys(directions)) {
+        if (!["up", "down"].includes(direction)) {
+          throw new TypeError(`${field}.animations.${direction} is not supported`);
+        }
+      }
+      directional[groupName] = Object.freeze({ atlas, animations: Object.freeze(animations) });
+    }
+    return Object.freeze(directional);
   }
 
   function normalizeSounds(value, manifest) {
@@ -151,7 +199,12 @@
     }
 
     const atlas = normalizeAtlas(source.atlas, resolvedManifestUrl);
-    const animations = normalizeAnimations(source.animations, atlas);
+    const animations = normalizeAnimations(
+      source.animations,
+      atlas,
+      "animations",
+      REQUIRED_ANIMATIONS,
+    );
 
     return Object.freeze({
       schemaVersion: positiveInteger(source.schemaVersion ?? 1, "schemaVersion"),
@@ -162,8 +215,25 @@
       manifestUrl: resolvedManifestUrl.href,
       atlas,
       animations,
+      directional: normalizeDirectional(source.directional, resolvedManifestUrl),
       sounds: normalizeSounds(source.sounds, resolvedManifestUrl),
     });
+  }
+
+  function resolveAnimation(pack, behavior, travelDirection = "horizontal") {
+    const base = { atlas: pack.atlas, animation: pack.animations[behavior] ?? pack.animations.idle };
+    const groupName = travelDirection.includes("diagonal")
+      ? "diagonal"
+      : travelDirection === "up" || travelDirection === "down"
+        ? "vertical"
+        : "horizontal";
+    const group = pack.directional?.[groupName];
+    if (!group) return base;
+    const animation =
+      groupName === "horizontal"
+        ? group.animations[behavior]
+        : group.animations[travelDirection.startsWith("up") ? "up" : "down"]?.[behavior];
+    return animation ? { atlas: group.atlas, animation } : base;
   }
 
   function normalizeCatalog(value) {
@@ -198,7 +268,13 @@
     return normalize(await response.json(), resolvedUrl);
   }
 
-  const api = Object.freeze({ REQUIRED_ANIMATIONS, normalizeCatalog, normalize, load });
+  const api = Object.freeze({
+    REQUIRED_ANIMATIONS,
+    normalizeCatalog,
+    normalize,
+    resolveAnimation,
+    load,
+  });
   root.VirtualPetPack = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(typeof window === "object" ? window : globalThis);

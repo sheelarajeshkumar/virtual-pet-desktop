@@ -1,0 +1,27 @@
+@import url("packs.css");
+
+#extensions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.extension {
+  padding: 12px;
+  border: 2px solid #241611;
+  background: rgb(255 253 246 / 75%);
+}
+
+.extension h2,
+.extension p {
+  margin: 0 0 8px;
+}
+
+.extension h2 {
+  font-size: 14px;
+}
+
+.extension .controls {
+  display: flex;
+  gap: 10px;
+}

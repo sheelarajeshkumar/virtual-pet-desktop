@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data and Export</title>
+    <link rel="stylesheet" href="data.css" />
+    <script src="data.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">PORTABLE AND OFFLINE</p>
+      <h1>Data and Export</h1>
+      <section>
+        <h2>Settings and care</h2>
+        <p>Back up or restore local settings, inventory, and care state as one JSON file.</p>
+        <div class="actions">
+          <button id="export-backup" type="button">EXPORT BACKUP</button>
+          <button id="import-backup" type="button" class="secondary">IMPORT BACKUP</button>
+        </div>
+      </section>
+      <section>
+        <h2>Community pet pack</h2>
+        <label for="pack">INSTALLED PACK</label>
+        <select id="pack"></select>
+        <button id="export-pack" type="button">EXPORT PACK FOLDER</button>
+      </section>
+      <p id="message" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

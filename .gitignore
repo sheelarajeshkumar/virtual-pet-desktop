@@ -24,3 +24,6 @@ src-tauri/gen/schemas/
 coverage/
 dist/
 *.log
+
+# Local GitNexus knowledge graph
+.gitnexus/

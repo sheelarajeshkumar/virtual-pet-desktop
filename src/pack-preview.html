@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pet Pack Preview</title>
+    <link rel="stylesheet" href="pack-preview.css" />
+    <script src="pet-pack.js" defer></script>
+    <script src="pack-preview.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">ANIMATION LAB</p>
+        <h1>Pet Pack Preview</h1>
+        <p>Inspect validated bundled and installed packs one frame at a time.</p>
+      </header>
+
+      <section class="preview" aria-label="Sprite preview">
+        <canvas id="canvas" width="320" height="320"></canvas>
+      </section>
+
+      <section class="controls" aria-label="Preview controls">
+        <label>Pet pack <select id="pack"></select></label>
+        <label>Behavior <select id="behavior"></select></label>
+        <label>
+          Direction
+          <select id="direction">
+            <option value="horizontal-right">Right</option>
+            <option value="horizontal-left">Left</option>
+            <option value="up">Back / up</option>
+            <option value="down">Front / down</option>
+            <option value="up-right">Back-right diagonal</option>
+            <option value="up-left">Back-left diagonal</option>
+            <option value="down-right">Front-right diagonal</option>
+            <option value="down-left">Front-left diagonal</option>
+          </select>
+        </label>
+        <div class="frame-control">
+          <span>Frame</span>
+          <button id="previous" type="button" aria-label="Previous frame">◀</button>
+          <input id="frame" type="range" min="0" max="0" value="0" />
+          <button id="next" type="button" aria-label="Next frame">▶</button>
+          <output id="frame-number" for="frame">1 / 1</output>
+        </div>
+      </section>
+
+      <p id="details"></p>
+      <p id="message" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

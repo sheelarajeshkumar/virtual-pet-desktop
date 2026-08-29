@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "example.happy-dance",
+  "name": "Happy Dance",
+  "description": "A short play and bark routine using only built-in actions.",
+  "steps": [
+    { "action": "play", "durationMs": 2500 },
+    { "action": "bark", "durationMs": 700 },
+    { "action": "auto", "durationMs": 500 }
+  ]
+}

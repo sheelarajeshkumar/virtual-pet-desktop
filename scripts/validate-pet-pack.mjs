@@ -28,6 +28,46 @@ function safeRelativePath(value) {
   );
 }
 
+function validateAtlas(atlas, prefix, requireValue) {
+  requireValue(object(atlas), `${prefix} must be an object`);
+  if (!object(atlas)) return;
+  requireValue(safeRelativePath(atlas.file), `${prefix}.file must be a safe relative path`);
+  requireValue(path.posix.extname(atlas.file ?? "").toLowerCase() === ".png", `${prefix}.file must be a PNG`);
+  for (const field of ["columns", "rows", "frameWidth", "frameHeight"]) {
+    requireValue(Number.isInteger(atlas[field]) && atlas[field] > 0, `${prefix}.${field} must be a positive integer`);
+  }
+}
+
+function validateAnimations(animations, atlas, prefix, requireValue, required = []) {
+  requireValue(object(animations), `${prefix} must be an object`);
+  if (!object(animations) || !object(atlas)) return;
+  for (const name of required) requireValue(object(animations[name]), `${prefix}.${name} is required`);
+  for (const [name, animation] of Object.entries(animations)) {
+    requireValue(/^[a-z][a-z0-9-]*$/.test(name), `animation name ${JSON.stringify(name)} is invalid`);
+    if (!object(animation)) {
+      requireValue(false, `${prefix}.${name} must be an object`);
+      continue;
+    }
+    requireValue(
+      Number.isInteger(animation.row) && animation.row >= 0 && animation.row < atlas.rows,
+      `${prefix}.${name}.row must reference an atlas row`,
+    );
+    requireValue(
+      Array.isArray(animation.frames) &&
+        animation.frames.length > 0 &&
+        animation.frames.every((frame) => Number.isInteger(frame) && frame >= 0 && frame < atlas.columns),
+      `${prefix}.${name}.frames must reference atlas columns`,
+    );
+    requireValue(
+      Number.isInteger(animation.frameDurationMs) &&
+        animation.frameDurationMs >= 40 &&
+        animation.frameDurationMs <= 60_000,
+      `${prefix}.${name}.frameDurationMs must be an integer from 40 to 60000`,
+    );
+    requireValue(typeof animation.loop === "boolean", `${prefix}.${name}.loop must be Boolean`);
+  }
+}
+
 function validateManifest(manifest) {
   const errors = [];
   const requireValue = (condition, message) => {
@@ -60,43 +100,33 @@ function validateManifest(manifest) {
   );
 
   const atlas = manifest.atlas;
-  requireValue(object(atlas), "atlas must be an object");
-  if (object(atlas)) {
-    requireValue(safeRelativePath(atlas.file), "atlas.file must be a safe relative path");
-    requireValue(path.posix.extname(atlas.file ?? "").toLowerCase() === ".png", "atlas.file must be a PNG");
-    for (const field of ["columns", "rows", "frameWidth", "frameHeight"]) {
-      requireValue(Number.isInteger(atlas[field]) && atlas[field] > 0, `atlas.${field} must be a positive integer`);
-    }
-  }
+  validateAtlas(atlas, "atlas", requireValue);
+  validateAnimations(manifest.animations, atlas, "animations", requireValue, REQUIRED_ANIMATIONS);
 
-  requireValue(object(manifest.animations), "animations must be an object");
-  if (object(manifest.animations) && object(atlas)) {
-    for (const required of REQUIRED_ANIMATIONS) {
-      requireValue(object(manifest.animations[required]), `animations.${required} is required`);
-    }
-    for (const [name, animation] of Object.entries(manifest.animations)) {
-      requireValue(/^[a-z][a-z0-9-]*$/.test(name), `animation name ${JSON.stringify(name)} is invalid`);
-      if (!object(animation)) {
-        errors.push(`animations.${name} must be an object`);
-        continue;
+  if (manifest.directional !== undefined) {
+    requireValue(object(manifest.directional), "directional must be an object");
+    if (object(manifest.directional)) {
+      for (const [groupName, group] of Object.entries(manifest.directional)) {
+        const prefix = `directional.${groupName}`;
+        requireValue(["horizontal", "vertical", "diagonal"].includes(groupName), `${prefix} is not supported`);
+        requireValue(object(group), `${prefix} must be an object`);
+        if (!object(group)) continue;
+        validateAtlas(group.atlas, `${prefix}.atlas`, requireValue);
+        if (groupName === "horizontal") {
+          validateAnimations(group.animations, group.atlas, `${prefix}.animations`, requireValue);
+          continue;
+        }
+        requireValue(object(group.animations), `${prefix}.animations must be an object`);
+        if (!object(group.animations)) continue;
+        const directions = Object.keys(group.animations);
+        requireValue(directions.some((direction) => direction === "up" || direction === "down"), `${prefix}.animations must define up or down`);
+        for (const [direction, animations] of Object.entries(group.animations)) {
+          requireValue(["up", "down"].includes(direction), `${prefix}.animations.${direction} is not supported`);
+          if (["up", "down"].includes(direction)) {
+            validateAnimations(animations, group.atlas, `${prefix}.animations.${direction}`, requireValue);
+          }
+        }
       }
-      requireValue(
-        Number.isInteger(animation.row) && animation.row >= 0 && animation.row < atlas.rows,
-        `animations.${name}.row must reference an atlas row`,
-      );
-      requireValue(
-        Array.isArray(animation.frames) &&
-          animation.frames.length > 0 &&
-          animation.frames.every((frame) => Number.isInteger(frame) && frame >= 0 && frame < atlas.columns),
-        `animations.${name}.frames must reference atlas columns`,
-      );
-      requireValue(
-        Number.isInteger(animation.frameDurationMs) &&
-          animation.frameDurationMs >= 40 &&
-          animation.frameDurationMs <= 60_000,
-        `animations.${name}.frameDurationMs must be an integer from 40 to 60000`,
-      );
-      requireValue(typeof animation.loop === "boolean", `animations.${name}.loop must be Boolean`);
     }
   }
 
@@ -147,6 +177,11 @@ function validateManifest(manifest) {
       }
       const referenced = [
         ...(safeRelativePath(atlas?.file) ? [atlas.file] : []),
+        ...(object(manifest.directional)
+          ? Object.values(manifest.directional)
+              .filter((group) => object(group) && safeRelativePath(group.atlas?.file))
+              .map((group) => group.atlas.file)
+          : []),
         ...(object(manifest.sounds)
           ? Object.values(manifest.sounds)
               .filter((sound) => object(sound) && safeRelativePath(sound.file))
@@ -196,13 +231,19 @@ async function validatePack(packDirectory) {
   if (errors.length) throw new Error(errors.join("\n"));
 
   const atlasFile = await validateAsset(root, manifest.atlas.file);
-  const dimensions = await pngDimensions(atlasFile);
-  const expectedWidth = manifest.atlas.columns * manifest.atlas.frameWidth;
-  const expectedHeight = manifest.atlas.rows * manifest.atlas.frameHeight;
-  if (dimensions.width !== expectedWidth || dimensions.height !== expectedHeight) {
-    throw new Error(
-      `atlas is ${dimensions.width}x${dimensions.height}; expected ${expectedWidth}x${expectedHeight}`,
-    );
+  const atlases = [["atlas", manifest.atlas, atlasFile]];
+  for (const [name, group] of Object.entries(manifest.directional ?? {})) {
+    atlases.push([`directional.${name}.atlas`, group.atlas, await validateAsset(root, group.atlas.file)]);
+  }
+  for (const [name, atlas, filename] of atlases) {
+    const dimensions = await pngDimensions(filename);
+    const expectedWidth = atlas.columns * atlas.frameWidth;
+    const expectedHeight = atlas.rows * atlas.frameHeight;
+    if (dimensions.width !== expectedWidth || dimensions.height !== expectedHeight) {
+      throw new Error(
+        `${name} is ${dimensions.width}x${dimensions.height}; expected ${expectedWidth}x${expectedHeight}`,
+      );
+    }
   }
 
   for (const sound of Object.values(manifest.sounds ?? {})) await validateAsset(root, sound.file);
@@ -230,6 +271,14 @@ async function selfTest() {
   const invalidFrame = structuredClone(manifest);
   invalidFrame.animations.walk.frames = [manifest.atlas.columns];
   assert(validateManifest(invalidFrame).some((error) => error.includes("atlas columns")));
+
+  const unsafeDirectional = structuredClone(manifest);
+  unsafeDirectional.directional.vertical.atlas.file = "../vertical.png";
+  assert(validateManifest(unsafeDirectional).some((error) => error.includes("safe relative path")));
+
+  const invalidDirectionalFrame = structuredClone(manifest);
+  invalidDirectionalFrame.directional.diagonal.animations.up.walk.row = 4;
+  assert(validateManifest(invalidDirectionalFrame).some((error) => error.includes("atlas row")));
   console.log("Pet pack validator self-test passed.");
 }
 

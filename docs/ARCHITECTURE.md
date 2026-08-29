@@ -36,13 +36,20 @@ The frontend schedules the next `tick` using the delay returned in each snapshot
 | `src/pet-pack.js` | Safe manifest normalization and pack-relative asset resolution |
 | `src/pet-packs/` | Catalog, validated manifests, atlases, sounds, and licenses |
 | `src/pet.css` | Transparent overlay styling and display size |
-| `src/settings.*` | Pet name and species settings UI |
+| `src/settings.*` | Pet, movement, care, and visibility settings UI |
 | `src/care.*` | Needs display and care-action UI |
-| `src/packs.*` | Community pack install/remove UI |
+| `src/packs.*`, `src/pack-preview.*` | Community pack management and directional animation preview |
+| `src/data.*` | Backup, restore, and pack export UI |
+| `src/extensions.*` | Declarative community behavior UI |
+| `src/ai.*` | Optional local AI settings and chat UI |
 | `src/assets/` | Sprite atlases and audio |
 | `src-tauri/src/engine.rs` | Platform-neutral state, movement, behavior, animation timing, tests |
 | `src-tauri/src/care.rs` | Platform-neutral needs decay, actions, difficulty, and tests |
-| `src-tauri/src/packs.rs` | External pack validation, atomic install, listing, and safe removal |
+| `src-tauri/src/packs.rs` | External pack validation, directional assets, atomic install, export, listing, and safe removal |
+| `src-tauri/src/backup.rs` | Versioned local backup validation |
+| `src-tauri/src/extensions.rs` | Bounded declarative behavior validation and storage |
+| `src-tauri/src/visibility.rs` | Persisted overlay state and global-shortcut validation |
+| `src-tauri/src/ai.rs` | Loopback-only Ollama client, settings, bounded memory, and action allowlist |
 | `src-tauri/src/lib.rs` | Tauri commands, native window handling, monitor geometry, tray, settings storage |
 | `src-tauri/tauri.conf.json` | Window, bundle, security, and app metadata |
 
@@ -63,12 +70,12 @@ Do not move native window calls into the renderer or add operating-system condit
 
 ## Persistence
 
-Settings and care state are serialized as separate JSON files under the operating system's application config directory. Bundled packs remain read-only; validated community packs are copied under the app config directory. No cloud service, telemetry, account, or network runtime is required.
+Settings, care, visibility, and optional AI state are serialized under the operating system's application config directory. Bundled packs remain read-only; validated community packs and behavior files are copied under app-managed roots. The core requires no cloud service, telemetry, account, or network runtime. AI is disabled by default and accepts only a local loopback Ollama endpoint.
 
 ## Security model
 
 The pet WebView loads bundled files and only the app-managed external-packs directory under the configured content security policy. External pack installation rejects traversal, symlinks, malformed manifests, invalid atlas dimensions, missing assets, and undocumented licenses; removal requires an app-owned directory marker. The overlay is click-through and exposes only the Tauri commands registered in `lib.rs`. New commands should validate all frontend input and expose the minimum required capability.
 
-## Future AI boundary
+## AI boundary
 
-The current core has no AI dependency or network runtime. A future AI companion must be disabled by default, operate asynchronously outside `PetEngine`, request only validated high-level pet actions, and leave movement, packs, care, settings, and offline operation unchanged when disabled or unavailable.
+AI is isolated from `PetEngine`, runs local model calls on a blocking worker, and can only suggest seven validated high-level actions. Suggestions require explicit confirmation. Disabling AI leaves movement, packs, care, settings, and offline operation unchanged.
