@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pet Packs</title>
+    <link rel="stylesheet" href="packs.css" />
+    <script src="packs.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">COMMUNITY PETS</p>
+      <h1>Pet Packs</h1>
+      <p class="intro">
+        Import an unpacked pet-pack folder. Packs are validated and copied into Virtual Pet's
+        private app data.
+      </p>
+      <button id="import" type="button">IMPORT FOLDER</button>
+      <section aria-labelledby="installed-title">
+        <h2 id="installed-title">Installed community packs</h2>
+        <div id="packs" class="packs"></div>
+        <p id="empty" class="empty">No community packs installed.</p>
+      </section>
+      <p id="message" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

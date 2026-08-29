@@ -38,9 +38,11 @@ The frontend schedules the next `tick` using the delay returned in each snapshot
 | `src/pet.css` | Transparent overlay styling and display size |
 | `src/settings.*` | Pet name and species settings UI |
 | `src/care.*` | Needs display and care-action UI |
+| `src/packs.*` | Community pack install/remove UI |
 | `src/assets/` | Sprite atlases and audio |
 | `src-tauri/src/engine.rs` | Platform-neutral state, movement, behavior, animation timing, tests |
 | `src-tauri/src/care.rs` | Platform-neutral needs decay, actions, difficulty, and tests |
+| `src-tauri/src/packs.rs` | External pack validation, atomic install, listing, and safe removal |
 | `src-tauri/src/lib.rs` | Tauri commands, native window handling, monitor geometry, tray, settings storage |
 | `src-tauri/tauri.conf.json` | Window, bundle, security, and app metadata |
 
@@ -48,7 +50,7 @@ The frontend schedules the next `tick` using the delay returned in each snapshot
 
 `Mode` represents a user-selected control state: Auto, Follow, Play, Bark, or Sleep. `Behavior` represents the animation currently rendered, such as Walk, Run, Attention, or Sniff.
 
-The Bark menu action is intentionally one-shot. The engine displays it briefly and then returns to Auto. Auto follows recent cursor movement, wanders after inactivity, and sleeps after extended inactivity.
+The Bark menu action is intentionally one-shot. The engine displays it briefly and then returns to Auto. Auto follows recent cursor movement, wanders after inactivity, and sleeps after extended inactivity. When enabled, the day/night routine shortens the inactive sleep delay from 45 seconds to 15 seconds between 22:00 and 06:59; recent cursor activity still wins.
 
 ## Platform boundaries
 
@@ -61,11 +63,11 @@ Do not move native window calls into the renderer or add operating-system condit
 
 ## Persistence
 
-Settings and care state are serialized as separate JSON files under the operating system's application config directory. Pet-pack files are bundled locally. No cloud service, telemetry, account, or network runtime is required.
+Settings and care state are serialized as separate JSON files under the operating system's application config directory. Bundled packs remain read-only; validated community packs are copied under the app config directory. No cloud service, telemetry, account, or network runtime is required.
 
 ## Security model
 
-The pet WebView loads bundled local files under the configured content security policy. The overlay is click-through and exposes only the Tauri commands registered in `lib.rs`. New commands should validate all frontend input and expose the minimum required capability.
+The pet WebView loads bundled files and only the app-managed external-packs directory under the configured content security policy. External pack installation rejects traversal, symlinks, malformed manifests, invalid atlas dimensions, missing assets, and undocumented licenses; removal requires an app-owned directory marker. The overlay is click-through and exposes only the Tauri commands registered in `lib.rs`. New commands should validate all frontend input and expose the minimum required capability.
 
 ## Future AI boundary
 

@@ -1,5 +1,6 @@
 mod care;
 mod engine;
+mod packs;
 
 use std::{
     fs,
@@ -8,8 +9,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use care::{CareAction, CareDifficulty, CareState};
+use care::{CareAction, CareActionResult, CareDifficulty, CareState};
 use engine::{Mode, PetEngine, PetSettings, PetSize, PetSnapshot, Point, Rect, TickInput};
+use packs::PetPackManifest;
 use serde::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
 use tauri::LogicalPosition;
@@ -71,6 +73,7 @@ struct RuntimeSnapshot {
     #[serde(flatten)]
     pet: PetSnapshot,
     care: Option<CareState>,
+    care_notifications: bool,
 }
 
 #[cfg(target_os = "macos")]
@@ -160,10 +163,14 @@ fn desktop_geometry(window: &WebviewWindow) -> Result<DesktopGeometry, String> {
 
 #[tauri::command]
 fn tick(
+    local_hour: u8,
     window: WebviewWindow,
     state: State<'_, EngineState>,
     care: State<'_, CareStore>,
 ) -> Result<RuntimeSnapshot, String> {
+    if local_hour > 23 {
+        return Err("Local hour must be between 0 and 23.".to_string());
+    }
     let geometry = desktop_geometry(&window)?;
     let now_ms = now_ms()?;
 
@@ -173,6 +180,7 @@ fn tick(
             .map_err(|_| "Pet state is unavailable".to_string())?;
         let snapshot = engine.tick(TickInput {
             now_ms,
+            local_hour,
             cursor: geometry.cursor,
             work_area: geometry.work_area,
             window_size: geometry.window_size,
@@ -212,6 +220,7 @@ fn tick(
     Ok(RuntimeSnapshot {
         pet: snapshot,
         care,
+        care_notifications: settings.care_notifications,
     })
 }
 
@@ -237,14 +246,16 @@ fn save_settings(
         movement_speed,
         sound_volume,
         reduced_motion,
+        day_night_enabled,
         care_enabled,
+        care_notifications,
         care_difficulty,
     } = settings;
     let name = name.trim();
     if name.is_empty() || name.chars().count() > 24 || name.chars().any(char::is_control) {
         return Err("Use a name between 1 and 24 characters.".to_string());
     }
-    if !valid_pet_id(&kind) {
+    if !valid_pet_id(&kind) || !pet_is_available(&app, &kind)? {
         return Err("Choose a valid installed pet.".to_string());
     }
     let pet_size =
@@ -268,7 +279,9 @@ fn save_settings(
         movement_speed,
         sound_volume,
         reduced_motion,
+        day_night_enabled,
         care_enabled,
+        care_notifications,
         care_difficulty,
     };
 
@@ -293,16 +306,33 @@ struct SaveSettingsInput {
     movement_speed: f64,
     sound_volume: u8,
     reduced_motion: bool,
+    day_night_enabled: bool,
     care_enabled: bool,
+    care_notifications: bool,
     care_difficulty: String,
 }
 
 fn valid_pet_id(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 64
+        && !value.starts_with(['-', '.'])
+        && !value.ends_with(['-', '.'])
+        && !value.contains("..")
         && value.chars().all(|character| {
-            character.is_ascii_lowercase() || character.is_ascii_digit() || character == '-'
+            character.is_ascii_lowercase()
+                || character.is_ascii_digit()
+                || character == '-'
+                || character == '.'
         })
+}
+
+fn pet_is_available(app: &AppHandle, id: &str) -> Result<bool, String> {
+    if matches!(id, "puppy" | "cat") {
+        return Ok(true);
+    }
+    packs::list_installed_packs(&packs_path(app)?)
+        .map(|packs| packs.iter().any(|pack| pack.id == id))
+        .map_err(|error| error.to_string())
 }
 
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -328,6 +358,78 @@ fn save_settings_file(app: &AppHandle, settings: &PetSettings) -> Result<(), Str
     fs::create_dir_all(directory).map_err(|error| error.to_string())?;
     let json = serde_json::to_string_pretty(settings).map_err(|error| error.to_string())?;
     fs::write(path, json).map_err(|error| error.to_string())
+}
+
+fn packs_path(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_config_dir()
+        .map(|directory| directory.join("packs"))
+        .map_err(|error| error.to_string())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct InstalledPackView {
+    id: String,
+    name: String,
+    version: String,
+    species: String,
+    manifest_path: String,
+}
+
+fn installed_pack_view(
+    root: &std::path::Path,
+    manifest: PetPackManifest,
+) -> Result<InstalledPackView, String> {
+    let manifest_path = root.join(&manifest.id).join("pet-pack.json");
+    let manifest_path = manifest_path
+        .to_str()
+        .ok_or_else(|| "The installed pet pack path is not valid Unicode.".to_string())?;
+    Ok(InstalledPackView {
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        species: manifest.species,
+        manifest_path: manifest_path.to_string(),
+    })
+}
+
+#[tauri::command]
+fn list_installed_pets(app: AppHandle) -> Result<Vec<InstalledPackView>, String> {
+    let root = packs_path(&app)?;
+    packs::list_installed_packs(&root)
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .map(|manifest| installed_pack_view(&root, manifest))
+        .collect()
+}
+
+#[tauri::command]
+fn install_pet_pack(source_directory: String, app: AppHandle) -> Result<InstalledPackView, String> {
+    let root = packs_path(&app)?;
+    let manifest = packs::install_pack(std::path::Path::new(&source_directory), &root)
+        .map_err(|error| error.to_string())?;
+    installed_pack_view(&root, manifest)
+}
+
+#[tauri::command]
+fn remove_pet_pack(
+    id: String,
+    app: AppHandle,
+    state: State<'_, EngineState>,
+) -> Result<(), String> {
+    let root = packs_path(&app)?;
+    packs::remove_installed_pack(&root, &id).map_err(|error| error.to_string())?;
+    let mut engine = state
+        .lock()
+        .map_err(|_| "Pet settings are unavailable".to_string())?;
+    let mut settings = engine.settings();
+    if settings.kind == id {
+        settings.kind = "puppy".to_string();
+        save_settings_file(&app, &settings)?;
+        engine.set_settings(settings);
+    }
+    Ok(())
 }
 
 fn care_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -404,6 +506,7 @@ fn perform_care_action(
         "sleep" => CareAction::Sleep,
         "wake" => CareAction::Wake,
         "rest" => CareAction::Rest,
+        "restock" => CareAction::Restock,
         _ => return Err("Unknown care action.".to_string()),
     };
     let settings = engine
@@ -413,13 +516,24 @@ fn perform_care_action(
     let mut care = care
         .lock()
         .map_err(|_| "Care state is unavailable".to_string())?;
-    if !care.apply(
+    match care.apply(
         action,
         now_ms()?,
         settings.care_difficulty,
         settings.care_enabled,
     ) {
-        return Err("Enable the care system in Settings first.".to_string());
+        CareActionResult::Applied => {}
+        CareActionResult::Disabled => {
+            return Err("Enable the care system in Settings first.".to_string());
+        }
+        CareActionResult::OutOfStock => {
+            return Err(match action {
+                CareAction::Feed => "No food left. Restock supplies first.",
+                CareAction::Play => "No toys left. Restock supplies first.",
+                _ => "Supplies are out of stock.",
+            }
+            .to_string());
+        }
     }
     save_care_file(&app, &care)?;
     let view = care_view(settings, &care);
@@ -459,7 +573,7 @@ fn open_settings(app: &AppHandle) -> tauri::Result<()> {
 
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("Virtual Pet Settings")
-        .inner_size(430.0, 610.0)
+        .inner_size(430.0, 690.0)
         .resizable(false)
         .always_on_top(true)
         .center()
@@ -477,6 +591,23 @@ fn open_care(app: &AppHandle) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, "care", WebviewUrl::App("care.html".into()))
         .title("Pet Care")
         .inner_size(410.0, 430.0)
+        .resizable(false)
+        .always_on_top(true)
+        .center()
+        .build()?;
+    Ok(())
+}
+
+fn open_packs(app: &AppHandle) -> tauri::Result<()> {
+    if let Some(window) = app.get_webview_window("packs") {
+        window.show()?;
+        window.set_focus()?;
+        return Ok(());
+    }
+
+    WebviewWindowBuilder::new(app, "packs", WebviewUrl::App("packs.html".into()))
+        .title("Pet Packs")
+        .inner_size(500.0, 540.0)
         .resizable(false)
         .always_on_top(true)
         .center()
@@ -525,13 +656,14 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let bark = MenuItem::with_id(app, "bark", "Bark", true, None::<&str>)?;
     let sleep = MenuItem::with_id(app, "sleep", "Sleep", true, None::<&str>)?;
     let care = MenuItem::with_id(app, "care", "Care…", true, None::<&str>)?;
+    let packs = MenuItem::with_id(app, "packs", "Pet packs…", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Name and pet…", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Virtual Pet", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
-            &auto, &follow, &play, &bark, &sleep, &care, &settings, &separator, &quit,
+            &auto, &follow, &play, &bark, &sleep, &care, &packs, &settings, &separator, &quit,
         ],
     )?;
 
@@ -548,6 +680,9 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
             "care" => {
                 let _ = open_care(app);
             }
+            "packs" => {
+                let _ = open_packs(app);
+            }
             "settings" => {
                 let _ = open_settings(app);
             }
@@ -562,12 +697,17 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             tick,
             get_settings,
             save_settings,
             get_care_state,
-            perform_care_action
+            perform_care_action,
+            list_installed_pets,
+            install_pet_pack,
+            remove_pet_pack
         ])
         .setup(|app| {
             app.manage(Mutex::new(PetEngine::new(load_settings_file(app.handle()))));
@@ -603,6 +743,7 @@ mod tests {
     #[test]
     fn pet_ids_are_safe_catalog_keys() {
         assert!(valid_pet_id("fluffy-cat-2"));
+        assert!(valid_pet_id("example.fluffy-cat-2"));
         assert!(!valid_pet_id("../cat"));
         assert!(!valid_pet_id("Cat"));
         assert!(!valid_pet_id(""));

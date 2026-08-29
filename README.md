@@ -16,13 +16,16 @@ An open-source, cross-platform animated desktop pet built with Tauri. Add pets, 
 - One-shot bark action with a real CC0 dog recording
 - Manifest-driven puppy and fluffy-cat pet packs
 - Persistent hunger, energy, happiness, and cleanliness with care actions
+- Persistent food/toy inventory with safe restocking
+- Optional day/night sleep routine and opt-in care notifications
+- Validated install/remove flow for community pet-pack folders
 - Configurable pet size, movement speed, sound volume, reduced motion, and care difficulty
 - Persistent pet name, species, appearance, and care settings
 - Lightweight JavaScript canvas renderer with a Rust movement engine
 
 ## Project status
 
-Virtual Pet Desktop is an early community release. Puppy and cat assets load through a validated pet-pack manifest. New bundled pets can be added through the catalog and pack files without changing the renderer or Rust engine; custom movement profiles and user-installed external packs remain future work.
+Virtual Pet Desktop is an early community release. Puppy and cat assets load through validated pet-pack manifests, and unpacked community packs can be installed from the tray. Custom movement profiles remain future work.
 
 ## Requirements
 
@@ -50,7 +53,8 @@ Use the paw icon in the system tray or macOS menu bar to control the pet.
 | Play | Plays around the cursor |
 | Bark | Barks once, then returns to Auto |
 | Sleep | Walks home and sleeps |
-| Care | Feed, pet, play with, wash, or rest the pet |
+| Care | Feed, pet, play with, wash, rest, or restock the pet |
+| Pet packs | Installs or removes validated community pack folders |
 | Name and pet | Updates appearance, motion, audio, and care settings |
 
 ## Checks
@@ -86,6 +90,7 @@ Contributions of code, pixel art, animations, sounds, documentation, testing, an
 - [Architecture](docs/ARCHITECTURE.md)
 - [Adding a pet](docs/ADDING_PETS.md)
 - [Animation and asset guide](docs/ANIMATION_GUIDE.md)
+- [Windows test checklist](docs/WINDOWS_TESTING.md)
 - [Roadmap](ROADMAP.md)
 
 Please report security issues privately according to [SECURITY.md](SECURITY.md).

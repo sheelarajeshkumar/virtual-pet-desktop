@@ -4,6 +4,10 @@ const disabledNotice = document.querySelector("#disabled");
 const message = document.querySelector("#message");
 const buttons = [...document.querySelectorAll("[data-action]")];
 const restButton = document.querySelector("#rest-action");
+const feedButton = document.querySelector("#feed-action");
+const playButton = document.querySelector("#play-action");
+const foodCount = document.querySelector("#food-count");
+const toyCount = document.querySelector("#toy-count");
 const needs = ["hunger", "energy", "happiness", "cleanliness"];
 
 function render(result) {
@@ -13,6 +17,10 @@ function render(result) {
   buttons.forEach((button) => {
     button.disabled = !enabled;
   });
+  foodCount.value = state.food;
+  toyCount.value = state.toys;
+  feedButton.disabled = !enabled || state.food === 0;
+  playButton.disabled = !enabled || state.toys === 0;
   restButton.dataset.action = state.sleeping ? "wake" : "sleep";
   restButton.textContent = state.sleeping ? "Wake" : "Rest";
   needs.forEach((need) => {

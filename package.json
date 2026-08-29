@@ -17,7 +17,7 @@
     "dev": "tauri dev",
     "build": "tauri build",
     "icon": "tauri icon src-tauri/icons/app-icon.svg",
-    "check:js": "node --check src/pet-pack.js && node --check src/pet.js && node --check src/settings.js && node --check src/care.js",
+    "check:js": "node --check src/pet-pack.js && node --check src/pet.js && node --check src/settings.js && node --check src/care.js && node --check src/packs.js",
     "check:pets": "node scripts/validate-pet-pack.mjs src/pet-packs/puppy && node scripts/validate-pet-pack.mjs src/pet-packs/cat",
     "check:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "check:rust": "cargo check --manifest-path src-tauri/Cargo.toml",

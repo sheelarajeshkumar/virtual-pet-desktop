@@ -4,7 +4,9 @@ const invoke = window.__TAURI__.core.invoke;
 const dogAtlas = new Image();
 const PET_SIZE = 224;
 const PET_SCALES = { small: 0.72, medium: 0.86, large: 1 };
-const packCatalog = fetch("pet-packs/catalog.json")
+const CARE_NOTIFICATION_KEY = "virtual-pet:last-care-notification";
+const CARE_NOTIFICATION_COOLDOWN_MS = 30 * 60 * 1000;
+const bundledPackCatalog = fetch("pet-packs/catalog.json")
   .then((response) => {
     if (!response.ok) throw new Error(`Pet catalog returned ${response.status}`);
     return response.json();
@@ -14,6 +16,7 @@ const packCatalog = fetch("pet-packs/catalog.json")
 let lastSnapshot;
 let activeKind;
 let activePack;
+let notificationPending = false;
 
 ctx.imageSmoothingEnabled = false;
 const barkSound = new Audio();
@@ -27,7 +30,12 @@ async function activatePack(kind) {
   activePack = undefined;
 
   try {
-    const manifestUrl = (await packCatalog).get(kind);
+    let manifestUrl = (await bundledPackCatalog).get(kind);
+    if (!manifestUrl) {
+      const installed = await invoke("list_installed_pets");
+      const pack = installed.find((candidate) => candidate.id === kind);
+      if (pack) manifestUrl = window.__TAURI__.core.convertFileSrc(pack.manifestPath);
+    }
     if (!manifestUrl) return;
     const pack = await window.VirtualPetPack.load(manifestUrl);
     if (activeKind !== kind) return;
@@ -45,6 +53,46 @@ async function activatePack(kind) {
     }
   } catch (error) {
     console.error(`Could not load the ${kind} pet pack`, error);
+  }
+}
+
+function criticalCareNeed(care) {
+  if (!care) return null;
+  if (care.hunger >= 80) return { id: "food", body: "Hunger is high. Time for food." };
+  if (care.energy <= 20) return { id: "rest", body: "Energy is low. Time to rest." };
+  if (care.cleanliness <= 20) return { id: "wash", body: "Cleanliness is low. Time for a wash." };
+  if (care.happiness <= 20) return { id: "play", body: "Happiness is low. Time to play." };
+  return null;
+}
+
+async function maybeNotify(snapshot) {
+  if (!snapshot.careNotifications || notificationPending) return;
+  const need = criticalCareNeed(snapshot.care);
+  if (!need) {
+    localStorage.removeItem(CARE_NOTIFICATION_KEY);
+    return;
+  }
+
+  const now = Date.now();
+  let previous;
+  try {
+    previous = JSON.parse(localStorage.getItem(CARE_NOTIFICATION_KEY));
+  } catch {
+    localStorage.removeItem(CARE_NOTIFICATION_KEY);
+  }
+  if (previous?.id === need.id && now - previous.at < CARE_NOTIFICATION_COOLDOWN_MS) return;
+
+  notificationPending = true;
+  try {
+    const notifications = window.__TAURI__.notification;
+    if (await notifications.isPermissionGranted()) {
+      notifications.sendNotification({ title: `${snapshot.name} needs you`, body: need.body });
+      localStorage.setItem(CARE_NOTIFICATION_KEY, JSON.stringify({ id: need.id, at: now }));
+    }
+  } catch (error) {
+    console.warn("Care notification unavailable", error);
+  } finally {
+    notificationPending = false;
   }
 }
 
@@ -359,6 +407,7 @@ function render(snapshot) {
   }
   drawCareNeed(snapshot.care);
   ctx.restore();
+  void maybeNotify(snapshot);
 }
 
 dogAtlas.addEventListener("load", () => {
@@ -368,7 +417,7 @@ dogAtlas.addEventListener("load", () => {
 async function tick() {
   let delay = 250;
   try {
-    const snapshot = await invoke("tick");
+    const snapshot = await invoke("tick", { localHour: new Date().getHours() });
     render(snapshot);
     delay = snapshot.nextTickMs;
   } catch (error) {
@@ -389,6 +438,7 @@ render({
   petSize: "medium",
   soundVolume: 65,
   reducedMotion: false,
+  careNotifications: false,
   care: null,
 });
 tick();

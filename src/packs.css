@@ -1,0 +1,117 @@
+:root {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color: #2b1b11;
+  background: #fff1d6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(420px 220px at 100% 0, #ffd49a, transparent 60%),
+    #fff1d6;
+}
+
+main {
+  padding: 20px;
+}
+
+.eyebrow,
+h1,
+h2,
+button {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #dc4c00;
+  font-size: 11px;
+}
+
+h1 {
+  margin: 6px 0;
+  font-size: 24px;
+}
+
+h2 {
+  margin: 20px 0 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.intro,
+.empty,
+#message {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+button {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 3px solid #241611;
+  color: white;
+  background: #2f66f0;
+  box-shadow: 3px 3px 0 #241611;
+  cursor: pointer;
+}
+
+button.remove {
+  min-height: 30px;
+  color: #241611;
+  background: #fffdf6;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+button:focus-visible {
+  outline: 3px solid #ff7a1a;
+  outline-offset: 2px;
+}
+
+.packs {
+  display: grid;
+  gap: 9px;
+}
+
+.pack {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 2px solid #241611;
+  background: rgb(255 253 246 / 75%);
+}
+
+.pack strong,
+.pack span {
+  display: block;
+}
+
+.pack span {
+  margin-top: 3px;
+  color: #72513c;
+  font-size: 11px;
+}
+
+#message {
+  min-height: 36px;
+  font-weight: 700;
+}
+
+#message[data-state="error"] {
+  color: #c0392b;
+}
+
+#message[data-state="success"] {
+  color: #176b36;
+}

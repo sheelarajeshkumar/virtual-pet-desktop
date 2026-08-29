@@ -8,7 +8,7 @@ A pet pack is a directory containing a `pet-pack.json` manifest and every asset 
 node scripts/validate-pet-pack.mjs src/pet-packs/puppy
 ```
 
-Validation is intentionally dependency-free so contributors only need Node.js. Add a valid bundled pack to `src/pet-packs/catalog.json` and it is discovered by both the settings screen and renderer without a code change.
+Validation is intentionally dependency-free so contributors only need Node.js. Add a valid bundled pack to `src/pet-packs/catalog.json`, or import its folder from **Pet packs…** in the tray menu. Imported packs are copied into app-managed storage after stricter native validation.
 
 ## Manifest
 

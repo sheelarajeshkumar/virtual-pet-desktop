@@ -38,12 +38,25 @@
         </div>
       </section>
 
+      <section id="inventory" aria-labelledby="inventory-title">
+        <h2 id="inventory-title">Supplies</h2>
+        <div class="supply">
+          <span aria-hidden="true">Food</span>
+          <output id="food-count" aria-label="Food available">5</output>
+        </div>
+        <div class="supply">
+          <span aria-hidden="true">Toys</span>
+          <output id="toy-count" aria-label="Toys available">3</output>
+        </div>
+      </section>
+
       <section id="actions" aria-label="Care actions">
-        <button type="button" data-action="feed">Feed</button>
+        <button id="feed-action" type="button" data-action="feed">Feed</button>
         <button type="button" data-action="pet">Pet</button>
-        <button type="button" data-action="play">Play</button>
+        <button id="play-action" type="button" data-action="play">Play</button>
         <button type="button" data-action="wash">Wash</button>
         <button id="rest-action" type="button" data-action="sleep">Rest</button>
+        <button type="button" data-action="restock">Restock</button>
       </section>
 
       <p id="message" role="status" aria-live="polite"></p>

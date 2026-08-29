@@ -33,7 +33,11 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'"
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPCONFIG/packs/**/*"]
+      },
+      "csp": "default-src 'self'; img-src 'self' data: asset: http://asset.localhost; media-src 'self' asset: http://asset.localhost; style-src 'self'; script-src 'self'"
     }
   },
   "bundle": {

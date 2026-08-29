@@ -40,6 +40,7 @@ impl Rect {
 #[derive(Clone, Copy, Debug)]
 pub struct TickInput {
     pub now_ms: u64,
+    pub local_hour: u8,
     pub cursor: Point,
     pub work_area: Rect,
     pub window_size: Point,
@@ -106,7 +107,9 @@ pub struct PetSettings {
     pub movement_speed: f64,
     pub sound_volume: u8,
     pub reduced_motion: bool,
+    pub day_night_enabled: bool,
     pub care_enabled: bool,
+    pub care_notifications: bool,
     pub care_difficulty: CareDifficulty,
 }
 
@@ -119,7 +122,9 @@ impl Default for PetSettings {
             movement_speed: 1.0,
             sound_volume: 65,
             reduced_motion: false,
+            day_night_enabled: true,
             care_enabled: true,
+            care_notifications: false,
             care_difficulty: CareDifficulty::Normal,
         }
     }
@@ -214,8 +219,15 @@ impl PetEngine {
 
         let idle_ms = input.now_ms.saturating_sub(self.last_input_ms);
         let effective_mode = match self.mode {
-            Mode::Auto if idle_ms >= 45_000 => Mode::Sleep,
             Mode::Auto if idle_ms <= 2_500 => Mode::Follow,
+            Mode::Auto
+                if self.settings.day_night_enabled
+                    && is_night(input.local_hour)
+                    && idle_ms >= 15_000 =>
+            {
+                Mode::Sleep
+            }
+            Mode::Auto if idle_ms >= 45_000 => Mode::Sleep,
             mode => mode,
         };
 
@@ -389,6 +401,10 @@ impl PetEngine {
     }
 }
 
+fn is_night(local_hour: u8) -> bool {
+    local_hour <= 6 || (22..=23).contains(&local_hour)
+}
+
 fn approach(current: f64, target: f64, max_delta: f64) -> f64 {
     if (target - current).abs() <= max_delta {
         target
@@ -536,6 +552,7 @@ mod tests {
 
         assert_eq!(settings.pet_size, PetSize::Medium);
         assert_eq!(settings.movement_speed, 1.0);
+        assert!(settings.day_night_enabled);
         assert!(settings.care_enabled);
     }
 
@@ -558,6 +575,7 @@ mod tests {
         engine.set_mode(Mode::Bark);
         let input = |now_ms| TickInput {
             now_ms,
+            local_hour: 12,
             cursor: Point::new(700.0, 400.0),
             work_area: Rect::new(0.0, 0.0, 1000.0, 800.0),
             window_size: Point::new(128.0, 128.0),
@@ -568,5 +586,66 @@ mod tests {
         let resumed = engine.tick(input(1_901));
         assert_eq!(resumed.mode, Mode::Auto);
         assert_ne!(resumed.behavior, Behavior::Bark);
+    }
+
+    fn routine_input(now_ms: u64, local_hour: u8, cursor: Point) -> TickInput {
+        TickInput {
+            now_ms,
+            local_hour,
+            cursor,
+            work_area: Rect::new(0.0, 0.0, 1000.0, 800.0),
+            window_size: Point::new(128.0, 128.0),
+            window_position: sleep_position(
+                Rect::new(0.0, 0.0, 1000.0, 800.0),
+                Point::new(128.0, 128.0),
+            ),
+        }
+    }
+
+    #[test]
+    fn inactive_pet_sleeps_at_night_after_fifteen_seconds() {
+        let mut engine = PetEngine::new(PetSettings::default());
+        let cursor = Point::new(500.0, 400.0);
+
+        engine.tick(routine_input(1_000, 22, cursor));
+        let snapshot = engine.tick(routine_input(16_000, 22, cursor));
+
+        assert_eq!(snapshot.behavior, Behavior::Sleep);
+    }
+
+    #[test]
+    fn active_cursor_follow_wins_at_night() {
+        let mut engine = PetEngine::new(PetSettings::default());
+
+        engine.tick(routine_input(1_000, 23, Point::new(500.0, 400.0)));
+        let snapshot = engine.tick(routine_input(20_000, 23, Point::new(700.0, 400.0)));
+
+        assert_eq!(snapshot.behavior, Behavior::Run);
+    }
+
+    #[test]
+    fn daytime_keeps_existing_auto_routine() {
+        let mut engine = PetEngine::new(PetSettings::default());
+        let cursor = Point::new(500.0, 400.0);
+
+        engine.tick(routine_input(1_000, 12, cursor));
+        let snapshot = engine.tick(routine_input(16_000, 12, cursor));
+
+        assert_ne!(snapshot.behavior, Behavior::Sleep);
+    }
+
+    #[test]
+    fn disabled_day_night_setting_does_not_sleep_early() {
+        let settings = PetSettings {
+            day_night_enabled: false,
+            ..PetSettings::default()
+        };
+        let mut engine = PetEngine::new(settings);
+        let cursor = Point::new(500.0, 400.0);
+
+        engine.tick(routine_input(1_000, 2, cursor));
+        let snapshot = engine.tick(routine_input(16_000, 2, cursor));
+
+        assert_ne!(snapshot.behavior, Behavior::Sleep);
     }
 }

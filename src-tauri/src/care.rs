@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 const HOUR_MS: f64 = 3_600_000.0;
+const DEFAULT_FOOD: u8 = 5;
+const DEFAULT_TOYS: u8 = 3;
+const MAX_FOOD: u8 = 10;
+const MAX_TOYS: u8 = 5;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -58,6 +62,14 @@ pub enum CareAction {
     Sleep,
     Wake,
     Rest,
+    Restock,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CareActionResult {
+    Applied,
+    Disabled,
+    OutOfStock,
 }
 
 /// `hunger` is a need: zero means full and 100 means very hungry. The other
@@ -69,6 +81,10 @@ pub struct CareState {
     pub energy: u8,
     pub happiness: u8,
     pub cleanliness: u8,
+    #[serde(default = "default_food")]
+    pub food: u8,
+    #[serde(default = "default_toys")]
+    pub toys: u8,
     pub sleeping: bool,
     pub last_updated_ms: Option<u64>,
     #[serde(default)]
@@ -91,6 +107,8 @@ impl Default for CareState {
             energy: 100,
             happiness: 100,
             cleanliness: 100,
+            food: DEFAULT_FOOD,
+            toys: DEFAULT_TOYS,
             sleeping: false,
             last_updated_ms: None,
             decay_carry: DecayCarry::default(),
@@ -152,26 +170,33 @@ impl CareState {
         self.clamp();
     }
 
-    /// Applies an action after first accounting for elapsed time. Returns false
-    /// when care is disabled and the action was intentionally ignored.
+    /// Applies an action after first accounting for elapsed time.
     pub fn apply(
         &mut self,
         action: CareAction,
         now_ms: u64,
         difficulty: CareDifficulty,
         enabled: bool,
-    ) -> bool {
+    ) -> CareActionResult {
         self.advance(now_ms, difficulty, enabled);
         if !enabled {
-            return false;
+            return CareActionResult::Disabled;
         }
 
         match action {
             CareAction::Feed => {
+                if self.food == 0 {
+                    return CareActionResult::OutOfStock;
+                }
+                self.food -= 1;
                 self.hunger = self.hunger.saturating_sub(35);
                 self.happiness = self.happiness.saturating_add(5);
             }
             CareAction::Play => {
+                if self.toys == 0 {
+                    return CareActionResult::OutOfStock;
+                }
+                self.toys -= 1;
                 self.hunger = self.hunger.saturating_add(8);
                 self.energy = self.energy.saturating_sub(15);
                 self.happiness = self.happiness.saturating_add(25);
@@ -190,9 +215,13 @@ impl CareState {
                 self.energy = self.energy.saturating_add(20);
                 self.happiness = self.happiness.saturating_add(3);
             }
+            CareAction::Restock => {
+                self.food = MAX_FOOD;
+                self.toys = MAX_TOYS;
+            }
         }
         self.clamp();
-        true
+        CareActionResult::Applied
     }
 
     fn clamp(&mut self) {
@@ -200,7 +229,17 @@ impl CareState {
         self.energy = self.energy.min(100);
         self.happiness = self.happiness.min(100);
         self.cleanliness = self.cleanliness.min(100);
+        self.food = self.food.min(MAX_FOOD);
+        self.toys = self.toys.min(MAX_TOYS);
     }
+}
+
+const fn default_food() -> u8 {
+    DEFAULT_FOOD
+}
+
+const fn default_toys() -> u8 {
+    DEFAULT_TOYS
 }
 
 fn increase(value: &mut u8, carry: &mut f64, amount: f64) {
@@ -228,13 +267,15 @@ mod tests {
             energy: 50,
             happiness: 50,
             cleanliness: 50,
+            food: DEFAULT_FOOD,
+            toys: DEFAULT_TOYS,
             sleeping: false,
             last_updated_ms: Some(1_000),
             decay_carry: DecayCarry::default(),
         }
     }
 
-    fn apply(state: &mut CareState, action: CareAction) -> bool {
+    fn apply(state: &mut CareState, action: CareAction) -> CareActionResult {
         state.apply(action, 1_000, CareDifficulty::Normal, true)
     }
 
@@ -243,6 +284,7 @@ mod tests {
         let state = CareState::default();
         assert_eq!((state.hunger, state.energy), (0, 100));
         assert_eq!((state.happiness, state.cleanliness), (100, 100));
+        assert_eq!((state.food, state.toys), (DEFAULT_FOOD, DEFAULT_TOYS));
         assert!(!state.sleeping);
     }
 
@@ -289,21 +331,32 @@ mod tests {
     fn disabled_care_freezes_state_and_ignores_actions() {
         let mut state = average_state();
         state.advance(3_601_000, CareDifficulty::Hard, false);
-        assert!(!state.apply(CareAction::Feed, 3_601_001, CareDifficulty::Hard, false));
+        assert_eq!(
+            state.apply(CareAction::Feed, 3_601_001, CareDifficulty::Hard, false),
+            CareActionResult::Disabled
+        );
         assert_eq!((state.hunger, state.energy), (50, 50));
+        assert_eq!(state.food, DEFAULT_FOOD);
     }
 
     #[test]
     fn feed_reduces_hunger() {
         let mut state = average_state();
-        assert!(apply(&mut state, CareAction::Feed));
+        assert_eq!(
+            apply(&mut state, CareAction::Feed),
+            CareActionResult::Applied
+        );
         assert_eq!((state.hunger, state.happiness), (15, 55));
+        assert_eq!(state.food, DEFAULT_FOOD - 1);
     }
 
     #[test]
     fn play_uses_energy_and_improves_happiness() {
         let mut state = average_state();
-        assert!(apply(&mut state, CareAction::Play));
+        assert_eq!(
+            apply(&mut state, CareAction::Play),
+            CareActionResult::Applied
+        );
         assert_eq!(
             (
                 state.hunger,
@@ -313,26 +366,36 @@ mod tests {
             ),
             (58, 35, 75, 45)
         );
+        assert_eq!(state.toys, DEFAULT_TOYS - 1);
     }
 
     #[test]
     fn wash_improves_cleanliness() {
         let mut state = average_state();
-        assert!(apply(&mut state, CareAction::Wash));
+        assert_eq!(
+            apply(&mut state, CareAction::Wash),
+            CareActionResult::Applied
+        );
         assert_eq!((state.cleanliness, state.happiness), (95, 45));
     }
 
     #[test]
     fn petting_improves_happiness() {
         let mut state = average_state();
-        assert!(apply(&mut state, CareAction::Pet));
+        assert_eq!(
+            apply(&mut state, CareAction::Pet),
+            CareActionResult::Applied
+        );
         assert_eq!(state.happiness, 65);
     }
 
     #[test]
     fn sleep_enables_recovery() {
         let mut state = average_state();
-        assert!(apply(&mut state, CareAction::Sleep));
+        assert_eq!(
+            apply(&mut state, CareAction::Sleep),
+            CareActionResult::Applied
+        );
         state.advance(3_601_000, CareDifficulty::Normal, true);
         assert!(state.sleeping);
         assert_eq!(state.energy, 75);
@@ -342,14 +405,20 @@ mod tests {
     fn wake_stops_sleeping() {
         let mut state = average_state();
         state.sleeping = true;
-        assert!(apply(&mut state, CareAction::Wake));
+        assert_eq!(
+            apply(&mut state, CareAction::Wake),
+            CareActionResult::Applied
+        );
         assert!(!state.sleeping);
     }
 
     #[test]
     fn rest_restores_energy() {
         let mut state = average_state();
-        assert!(apply(&mut state, CareAction::Rest));
+        assert_eq!(
+            apply(&mut state, CareAction::Rest),
+            CareActionResult::Applied
+        );
         assert_eq!((state.energy, state.happiness), (70, 53));
     }
 
@@ -358,7 +427,67 @@ mod tests {
         let mut state = average_state();
         state.hunger = 3;
         state.happiness = 99;
-        assert!(apply(&mut state, CareAction::Feed));
+        assert_eq!(
+            apply(&mut state, CareAction::Feed),
+            CareActionResult::Applied
+        );
         assert_eq!((state.hunger, state.happiness), (0, 100));
+    }
+
+    #[test]
+    fn old_saved_state_receives_inventory_defaults() {
+        let state: CareState = serde_json::from_str(
+            r#"{"hunger":20,"energy":80,"happiness":70,"cleanliness":60,"sleeping":false}"#,
+        )
+        .unwrap();
+        assert_eq!((state.food, state.toys), (DEFAULT_FOOD, DEFAULT_TOYS));
+    }
+
+    #[test]
+    fn inventory_survives_serialization() {
+        let mut state = average_state();
+        state.food = 2;
+        state.toys = 1;
+        let restored: CareState =
+            serde_json::from_str(&serde_json::to_string(&state).unwrap()).unwrap();
+        assert_eq!((restored.food, restored.toys), (2, 1));
+    }
+
+    #[test]
+    fn empty_inventory_blocks_only_consuming_actions() {
+        let mut state = average_state();
+        state.food = 0;
+        state.toys = 0;
+        let before = state.clone();
+        assert_eq!(
+            apply(&mut state, CareAction::Feed),
+            CareActionResult::OutOfStock
+        );
+        assert_eq!(
+            apply(&mut state, CareAction::Play),
+            CareActionResult::OutOfStock
+        );
+        assert_eq!(state, before);
+        assert_eq!(
+            apply(&mut state, CareAction::Pet),
+            CareActionResult::Applied
+        );
+    }
+
+    #[test]
+    fn restock_replenishes_and_clamp_enforces_caps() {
+        let mut state = average_state();
+        state.food = 0;
+        state.toys = 1;
+        assert_eq!(
+            apply(&mut state, CareAction::Restock),
+            CareActionResult::Applied
+        );
+        assert_eq!((state.food, state.toys), (MAX_FOOD, MAX_TOYS));
+
+        state.food = u8::MAX;
+        state.toys = u8::MAX;
+        state.advance(1_001, CareDifficulty::Normal, true);
+        assert_eq!((state.food, state.toys), (MAX_FOOD, MAX_TOYS));
     }
 }
