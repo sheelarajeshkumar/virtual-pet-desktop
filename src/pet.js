@@ -2,6 +2,8 @@ const canvas = document.querySelector("#pet");
 const ctx = canvas.getContext("2d", { alpha: true });
 const invoke = window.__TAURI__.core.invoke;
 const dogAtlas = new Image();
+const dogDirectionalAtlas = new Image();
+const dogDiagonalAtlas = new Image();
 const PET_SIZE = 224;
 const PET_SCALES = { small: 0.72, medium: 0.86, large: 1 };
 const CARE_NOTIFICATION_KEY = "virtual-pet:last-care-notification";
@@ -23,6 +25,8 @@ const barkSound = new Audio();
 barkSound.preload = "auto";
 const snoreSound = new Audio();
 snoreSound.preload = "auto";
+dogDirectionalAtlas.src = "pet-packs/puppy/assets/dog-directional-atlas.png";
+dogDiagonalAtlas.src = "pet-packs/puppy/assets/dog-diagonal-atlas.png";
 
 async function activatePack(kind) {
   if (kind === activeKind) return;
@@ -220,9 +224,21 @@ function drawDogAtlas(snapshot) {
   const animation =
     activePack.animations[snapshot.behavior] ?? activePack.animations.idle;
   const frame = packFrame(snapshot, animation);
-  const row = animation.row;
-  const sourceWidth = activePack.atlas.frameWidth;
-  const sourceHeight = activePack.atlas.frameHeight;
+  const vertical = ["up", "down"].includes(snapshot.travelDirection);
+  const diagonal = ["up-diagonal", "down-diagonal"].includes(snapshot.travelDirection);
+  const directionalRow =
+    snapshot.kind === "puppy" &&
+    ["walk", "run"].includes(snapshot.behavior) &&
+    ((vertical && dogDirectionalAtlas.complete && dogDirectionalAtlas.naturalWidth) ||
+      (diagonal && dogDiagonalAtlas.complete && dogDiagonalAtlas.naturalWidth))
+      ? (snapshot.travelDirection.startsWith("up") ? 2 : 0) +
+        (snapshot.behavior === "run" ? 1 : 0)
+      : null;
+  const atlas =
+    directionalRow === null ? dogAtlas : diagonal ? dogDiagonalAtlas : dogDirectionalAtlas;
+  const row = directionalRow ?? animation.row;
+  const sourceWidth = directionalRow === null ? activePack.atlas.frameWidth : 224;
+  const sourceHeight = directionalRow === null ? activePack.atlas.frameHeight : 224;
   const inset = (canvas.width - PET_SIZE) / 2;
 
   if (snapshot.behavior === "sleep" && snapshot.kind === "puppy") {
@@ -258,7 +274,7 @@ function drawDogAtlas(snapshot) {
   }
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
-    dogAtlas,
+    atlas,
     frame * sourceWidth,
     row * sourceHeight,
     sourceWidth,
@@ -414,6 +430,14 @@ dogAtlas.addEventListener("load", () => {
   if (lastSnapshot) render(lastSnapshot);
 });
 
+dogDirectionalAtlas.addEventListener("load", () => {
+  if (lastSnapshot) render(lastSnapshot);
+});
+
+dogDiagonalAtlas.addEventListener("load", () => {
+  if (lastSnapshot) render(lastSnapshot);
+});
+
 async function tick() {
   let delay = 250;
   try {
@@ -433,6 +457,7 @@ render({
   mode: "auto",
   behavior: "idle",
   facing: "right",
+  travelDirection: "horizontal",
   frame: 0,
   elapsedMs: 0,
   petSize: "medium",

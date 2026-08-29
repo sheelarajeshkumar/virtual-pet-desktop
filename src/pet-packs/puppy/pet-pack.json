@@ -90,6 +90,20 @@
         "modifications": "Renamed copy of the original dog-atlas-v2.png artwork."
       },
       {
+        "path": "assets/dog-directional-atlas.png",
+        "creator": "Virtual Pet Desktop contributors using OpenAI image generation",
+        "source": "https://github.com/sheelarajeshkumar/virtual-pet-desktop",
+        "spdx": "MIT",
+        "modifications": "Generated from the original puppy reference and resized to a 4x4 front/back walk/run atlas."
+      },
+      {
+        "path": "assets/dog-diagonal-atlas.png",
+        "creator": "Virtual Pet Desktop contributors using OpenAI image generation",
+        "source": "https://github.com/sheelarajeshkumar/virtual-pet-desktop",
+        "spdx": "MIT",
+        "modifications": "Generated from the puppy references and resized to a 4x4 three-quarter walk/run atlas; mirrored at runtime for left diagonals."
+      },
+      {
         "path": "sounds/bark.wav",
         "creator": "Joseph SARDIN and Axeline T.",
         "source": "https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html",

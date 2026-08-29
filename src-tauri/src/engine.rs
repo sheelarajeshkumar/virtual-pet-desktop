@@ -98,6 +98,16 @@ pub enum Facing {
     Right,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TravelDirection {
+    Horizontal,
+    Up,
+    Down,
+    UpDiagonal,
+    DownDiagonal,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct PetSettings {
@@ -138,6 +148,7 @@ pub struct PetSnapshot {
     pub mode: Mode,
     pub behavior: Behavior,
     pub facing: Facing,
+    pub travel_direction: TravelDirection,
     pub frame: u8,
     pub elapsed_ms: u64,
     pub pet_size: PetSize,
@@ -152,6 +163,7 @@ pub struct PetEngine {
     mode: Mode,
     behavior: Behavior,
     facing: Facing,
+    travel_direction: TravelDirection,
     last_tick_ms: Option<u64>,
     last_cursor: Option<Point>,
     last_input_ms: u64,
@@ -166,6 +178,7 @@ impl PetEngine {
             mode: Mode::Auto,
             behavior: Behavior::Idle,
             facing: Facing::Right,
+            travel_direction: TravelDirection::Horizontal,
             last_tick_ms: None,
             last_cursor: None,
             last_input_ms: 0,
@@ -357,6 +370,7 @@ impl PetEngine {
                 Facing::Right
             };
         }
+        self.travel_direction = travel_direction(self.travel_direction, self.velocity);
 
         let next_behavior =
             if distance < 5.0 && matches!(requested_behavior, Behavior::Walk | Behavior::Run) {
@@ -390,6 +404,7 @@ impl PetEngine {
             mode: self.mode,
             behavior: self.behavior,
             facing: self.facing,
+            travel_direction: self.travel_direction,
             frame: animation_frame(self.behavior, elapsed, self.settings.reduced_motion),
             elapsed_ms: elapsed,
             pet_size: self.settings.pet_size,
@@ -398,6 +413,49 @@ impl PetEngine {
             position,
             next_tick_ms,
         }
+    }
+}
+
+fn travel_direction(current: TravelDirection, velocity: Point) -> TravelDirection {
+    let horizontal = velocity.x.abs();
+    let vertical = velocity.y.abs();
+    if horizontal.max(vertical) <= 1.0 {
+        return current;
+    }
+
+    let vertical_direction = if velocity.y < 0.0 {
+        TravelDirection::Up
+    } else {
+        TravelDirection::Down
+    };
+    let diagonal_direction = if velocity.y < 0.0 {
+        TravelDirection::UpDiagonal
+    } else {
+        TravelDirection::DownDiagonal
+    };
+
+    match current {
+        TravelDirection::Horizontal if vertical > horizontal * 1.7 => vertical_direction,
+        TravelDirection::Horizontal if vertical > horizontal * 0.65 => diagonal_direction,
+        TravelDirection::Up | TravelDirection::Down if horizontal > vertical * 1.7 => {
+            TravelDirection::Horizontal
+        }
+        TravelDirection::Up | TravelDirection::Down if horizontal > vertical * 0.65 => {
+            diagonal_direction
+        }
+        TravelDirection::Up | TravelDirection::Down => vertical_direction,
+        TravelDirection::UpDiagonal | TravelDirection::DownDiagonal
+            if horizontal > vertical * 1.6 =>
+        {
+            TravelDirection::Horizontal
+        }
+        TravelDirection::UpDiagonal | TravelDirection::DownDiagonal
+            if vertical > horizontal * 1.6 =>
+        {
+            vertical_direction
+        }
+        TravelDirection::UpDiagonal | TravelDirection::DownDiagonal => diagonal_direction,
+        _ => current,
     }
 }
 
@@ -531,6 +589,34 @@ mod tests {
     fn walk_animation_wraps_after_four_frames() {
         assert_eq!(animation_frame(Behavior::Walk, 3 * 140, false), 3);
         assert_eq!(animation_frame(Behavior::Walk, 4 * 140, false), 0);
+    }
+
+    #[test]
+    fn travel_direction_uses_vertical_views_without_diagonal_flicker() {
+        assert_eq!(
+            travel_direction(TravelDirection::Horizontal, Point::new(10.0, -30.0)),
+            TravelDirection::Up
+        );
+        assert_eq!(
+            travel_direction(TravelDirection::Up, Point::new(20.0, -20.0)),
+            TravelDirection::UpDiagonal
+        );
+        assert_eq!(
+            travel_direction(TravelDirection::UpDiagonal, Point::new(40.0, -20.0)),
+            TravelDirection::Horizontal
+        );
+        assert_eq!(
+            travel_direction(TravelDirection::Up, Point::new(5.0, 25.0)),
+            TravelDirection::Down
+        );
+        assert_eq!(
+            travel_direction(TravelDirection::Horizontal, Point::new(20.0, 20.0)),
+            TravelDirection::DownDiagonal
+        );
+        assert_eq!(
+            travel_direction(TravelDirection::DownDiagonal, Point::new(20.0, -20.0)),
+            TravelDirection::UpDiagonal
+        );
     }
 
     #[test]
