@@ -1,15 +1,15 @@
 # Animation and Asset Guide
 
-## Puppy atlas contract
+## Bundled atlas contract
 
-The current puppy atlas is a transparent 4-column × 8-row image. Each source frame is square.
+The bundled puppy and cat atlases are transparent 4-column × 8-row images. Each source frame is square. The manifest is authoritative for custom pack dimensions, frame order, and timing.
 
 | Row | Behavior | Frames |
 | --- | --- | --- |
 | 0 | Idle | 4 |
 | 1 | Walk | 4 |
 | 2 | Run | 4 |
-| 3 | Bark | 4 |
+| 3 | Bark or vocal action | 4 |
 | 4 | Play | 4 |
 | 5 | Sleep | 4 |
 | 6 | Attention | 4 |
@@ -42,6 +42,6 @@ Before submitting an atlas:
 2. Confirm all cells have identical dimensions.
 3. Confirm alpha is preserved.
 4. Confirm no frame is clipped when mirrored.
-5. Record the creator, source, tools, modifications, and license in `ASSETS.md`.
+5. Record the creator, source, tools, modifications, and license in the pack manifest and `ASSETS.md`.
 
 Do not commit layered source files unless they are useful and reasonably sized. Link to large source packages from the pull request when necessary.

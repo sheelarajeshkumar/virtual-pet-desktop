@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::care::CareDifficulty;
+
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Point {
     pub x: f64,
@@ -44,18 +46,21 @@ pub struct TickInput {
     pub window_position: Point,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum PetKind {
-    Cat,
-    Puppy,
+pub enum PetSize {
+    Small,
+    #[default]
+    Medium,
+    Large,
 }
 
-impl PetKind {
+impl PetSize {
     pub fn parse(value: &str) -> Option<Self> {
         match value {
-            "cat" => Some(Self::Cat),
-            "puppy" => Some(Self::Puppy),
+            "small" => Some(Self::Small),
+            "medium" => Some(Self::Medium),
+            "large" => Some(Self::Large),
             _ => None,
         }
     }
@@ -93,17 +98,29 @@ pub enum Facing {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(default, rename_all = "camelCase")]
 pub struct PetSettings {
     pub name: String,
-    pub kind: PetKind,
+    pub kind: String,
+    pub pet_size: PetSize,
+    pub movement_speed: f64,
+    pub sound_volume: u8,
+    pub reduced_motion: bool,
+    pub care_enabled: bool,
+    pub care_difficulty: CareDifficulty,
 }
 
 impl Default for PetSettings {
     fn default() -> Self {
         Self {
             name: "Mochi".to_string(),
-            kind: PetKind::Puppy,
+            kind: "puppy".to_string(),
+            pet_size: PetSize::Medium,
+            movement_speed: 1.0,
+            sound_volume: 65,
+            reduced_motion: false,
+            care_enabled: true,
+            care_difficulty: CareDifficulty::Normal,
         }
     }
 }
@@ -112,11 +129,15 @@ impl Default for PetSettings {
 #[serde(rename_all = "camelCase")]
 pub struct PetSnapshot {
     pub name: String,
-    pub kind: PetKind,
+    pub kind: String,
     pub mode: Mode,
     pub behavior: Behavior,
     pub facing: Facing,
     pub frame: u8,
+    pub elapsed_ms: u64,
+    pub pet_size: PetSize,
+    pub sound_volume: u8,
+    pub reduced_motion: bool,
     pub position: Point,
     pub next_tick_ms: u64,
 }
@@ -161,6 +182,10 @@ impl PetEngine {
         if mode != Mode::Sleep {
             self.last_input_ms = self.last_tick_ms.unwrap_or(0);
         }
+    }
+
+    fn is_cat(&self) -> bool {
+        self.settings.kind == "cat"
     }
 
     pub fn tick(&mut self, input: TickInput) -> PetSnapshot {
@@ -222,30 +247,24 @@ impl PetEngine {
                 (
                     top_left(target_center, input.window_size),
                     Behavior::Play,
-                    match self.settings.kind {
-                        PetKind::Cat => 430.0,
-                        PetKind::Puppy => 620.0,
-                    },
+                    if self.is_cat() { 430.0 } else { 620.0 },
                 )
             }
             Mode::Bark => (input.window_position, Behavior::Bark, 0.0),
             Mode::Follow => {
-                let stop_distance = match self.settings.kind {
-                    PetKind::Cat => 78.0,
-                    PetKind::Puppy => 24.0,
-                };
+                let stop_distance = if self.is_cat() { 78.0 } else { 24.0 };
                 let target_center = follow_target(window_center, input.cursor, stop_distance);
                 let distance = window_center.distance(input.cursor);
-                let behavior = match self.settings.kind {
-                    PetKind::Cat if distance > 280.0 => Behavior::Run,
-                    PetKind::Cat => Behavior::Walk,
-                    PetKind::Puppy if distance > 80.0 => Behavior::Run,
-                    PetKind::Puppy => Behavior::Walk,
+                let behavior = match (self.is_cat(), distance) {
+                    (true, distance) if distance > 280.0 => Behavior::Run,
+                    (true, _) => Behavior::Walk,
+                    (false, distance) if distance > 80.0 => Behavior::Run,
+                    (false, _) => Behavior::Walk,
                 };
                 let speed = match behavior {
-                    Behavior::Run if self.settings.kind == PetKind::Puppy => 640.0,
+                    Behavior::Run if !self.is_cat() => 640.0,
                     Behavior::Run => 460.0,
-                    Behavior::Walk if self.settings.kind == PetKind::Puppy => 390.0,
+                    Behavior::Walk if !self.is_cat() => 390.0,
                     Behavior::Walk => 270.0,
                     _ => 0.0,
                 };
@@ -257,19 +276,24 @@ impl PetEngine {
                         wander_position(input.now_ms, input.work_area, input.window_size);
                     (waypoint, Behavior::Walk, 180.0)
                 } else {
-                    let behavior = match self.settings.kind {
-                        PetKind::Cat if idle_ms >= 5_000 => Behavior::Groom,
-                        PetKind::Cat => Behavior::Idle,
-                        PetKind::Puppy => match (idle_ms / 1_400) % 3 {
+                    let behavior = if self.is_cat() {
+                        if idle_ms >= 5_000 {
+                            Behavior::Groom
+                        } else {
+                            Behavior::Idle
+                        }
+                    } else {
+                        match (idle_ms / 1_400) % 3 {
                             1 => Behavior::Attention,
                             2 => Behavior::Sniff,
                             _ => Behavior::Idle,
-                        },
+                        }
                     };
                     (input.window_position, behavior, 0.0)
                 }
             }
         };
+        let speed = speed * self.settings.movement_speed;
 
         let target = clamp_position(target, input.work_area, input.window_size);
         let delta = Point::new(
@@ -290,7 +314,7 @@ impl PetEngine {
             Behavior::Run | Behavior::Play => 2_200.0,
             Behavior::Walk => 1_200.0,
             _ => 1_800.0,
-        };
+        } * self.settings.movement_speed;
         let velocity_step = acceleration * dt;
         self.velocity = Point::new(
             approach(self.velocity.x, desired_velocity.x, velocity_step),
@@ -326,7 +350,7 @@ impl PetEngine {
             if distance < 5.0 && matches!(requested_behavior, Behavior::Walk | Behavior::Run) {
                 if effective_mode == Mode::Sleep {
                     Behavior::Sleep
-                } else if self.settings.kind == PetKind::Puppy {
+                } else if !self.is_cat() {
                     Behavior::Attention
                 } else {
                     Behavior::Idle
@@ -343,17 +367,22 @@ impl PetEngine {
             Behavior::Sleep => 500,
             Behavior::Idle | Behavior::Groom | Behavior::Attention | Behavior::Sniff => 120,
             Behavior::Bark | Behavior::Play => 80,
+            Behavior::Walk | Behavior::Run if self.settings.reduced_motion => 32,
             Behavior::Walk | Behavior::Run => 16,
         };
         let elapsed = input.now_ms.saturating_sub(self.behavior_started_ms);
 
         PetSnapshot {
             name: self.settings.name.clone(),
-            kind: self.settings.kind,
+            kind: self.settings.kind.clone(),
             mode: self.mode,
             behavior: self.behavior,
             facing: self.facing,
-            frame: animation_frame(self.behavior, elapsed),
+            frame: animation_frame(self.behavior, elapsed, self.settings.reduced_motion),
+            elapsed_ms: elapsed,
+            pet_size: self.settings.pet_size,
+            sound_volume: self.settings.sound_volume,
+            reduced_motion: self.settings.reduced_motion,
             position,
             next_tick_ms,
         }
@@ -370,7 +399,14 @@ fn approach(current: f64, target: f64, max_delta: f64) -> f64 {
     }
 }
 
-fn animation_frame(behavior: Behavior, elapsed_ms: u64) -> u8 {
+fn animation_frame(behavior: Behavior, elapsed_ms: u64, reduced_motion: bool) -> u8 {
+    if reduced_motion {
+        return match behavior {
+            Behavior::Sleep => 3,
+            Behavior::Walk | Behavior::Run => ((elapsed_ms / 280) % 4) as u8,
+            _ => 0,
+        };
+    }
     match behavior {
         Behavior::Run => ((elapsed_ms / 90) % 4) as u8,
         Behavior::Walk => ((elapsed_ms / 140) % 4) as u8,
@@ -477,14 +513,30 @@ mod tests {
 
     #[test]
     fn walk_animation_wraps_after_four_frames() {
-        assert_eq!(animation_frame(Behavior::Walk, 3 * 140), 3);
-        assert_eq!(animation_frame(Behavior::Walk, 4 * 140), 0);
+        assert_eq!(animation_frame(Behavior::Walk, 3 * 140, false), 3);
+        assert_eq!(animation_frame(Behavior::Walk, 4 * 140, false), 0);
     }
 
     #[test]
     fn run_animation_wraps_after_four_frames() {
-        assert_eq!(animation_frame(Behavior::Run, 3 * 90), 3);
-        assert_eq!(animation_frame(Behavior::Run, 4 * 90), 0);
+        assert_eq!(animation_frame(Behavior::Run, 3 * 90, false), 3);
+        assert_eq!(animation_frame(Behavior::Run, 4 * 90, false), 0);
+    }
+
+    #[test]
+    fn reduced_motion_keeps_idle_still_and_sleeping_complete() {
+        assert_eq!(animation_frame(Behavior::Idle, 10_000, true), 0);
+        assert_eq!(animation_frame(Behavior::Sleep, 0, true), 3);
+    }
+
+    #[test]
+    fn old_settings_files_receive_new_defaults() {
+        let settings: PetSettings =
+            serde_json::from_str(r#"{"name":"Mochi","kind":"puppy"}"#).unwrap();
+
+        assert_eq!(settings.pet_size, PetSize::Medium);
+        assert_eq!(settings.movement_speed, 1.0);
+        assert!(settings.care_enabled);
     }
 
     #[test]

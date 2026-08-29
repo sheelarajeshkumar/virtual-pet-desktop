@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pet Care</title>
+    <link rel="stylesheet" href="care.css" />
+    <script src="care.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">DAILY CARE</p>
+      <h1 id="title">Pet Care</h1>
+      <p id="disabled" class="notice" hidden>
+        The care system is disabled. Enable it in Settings to use care actions.
+      </p>
+
+      <section id="needs" aria-label="Pet needs">
+        <div class="need">
+          <label for="hunger">Fullness</label>
+          <progress id="hunger" max="100" value="100"></progress>
+          <output id="hunger-value" for="hunger">100%</output>
+        </div>
+        <div class="need">
+          <label for="energy">Energy</label>
+          <progress id="energy" max="100" value="100"></progress>
+          <output id="energy-value" for="energy">100%</output>
+        </div>
+        <div class="need">
+          <label for="happiness">Happiness</label>
+          <progress id="happiness" max="100" value="100"></progress>
+          <output id="happiness-value" for="happiness">100%</output>
+        </div>
+        <div class="need">
+          <label for="cleanliness">Cleanliness</label>
+          <progress id="cleanliness" max="100" value="100"></progress>
+          <output id="cleanliness-value" for="cleanliness">100%</output>
+        </div>
+      </section>
+
+      <section id="actions" aria-label="Care actions">
+        <button type="button" data-action="feed">Feed</button>
+        <button type="button" data-action="pet">Pet</button>
+        <button type="button" data-action="play">Play</button>
+        <button type="button" data-action="wash">Wash</button>
+        <button id="rest-action" type="button" data-action="sleep">Rest</button>
+      </section>
+
+      <p id="message" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

@@ -8,6 +8,8 @@ Every bundled asset must have a known source and a license compatible with open-
 | --- | --- | --- |
 | `src/assets/dog-atlas-v1.png` | Original Virtual Pet Desktop artwork | MIT |
 | `src/assets/dog-atlas-v2.png` | Original Virtual Pet Desktop artwork | MIT |
+| `src/pet-packs/puppy/assets/dog-atlas.png` | Packaged copy of original Virtual Pet Desktop artwork | MIT |
+| `src/pet-packs/cat/assets/cat-atlas.png` | Original project artwork created with OpenAI image generation and resized to a 4×8 atlas | MIT |
 | `src-tauri/icons/` | Original Virtual Pet Desktop artwork and generated icon sizes | MIT |
 
 ## Third-party assets
@@ -16,6 +18,7 @@ Every bundled asset must have a known source and a license compatible with open-
 | --- | --- | --- | --- |
 | `src/assets/bark.wav` | Joseph SARDIN and Axeline T., [Small Dog Barking Behind Door](https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html) | A single bark was trimmed, filtered, faded, normalized, converted to mono, and resampled to 44.1 kHz PCM WAV | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `src/assets/dog-snoring.mp3` | Filmscore, [Small Dog Snoring 3](https://freesound.org/people/Filmscore/sounds/516871/) | Freesound high-quality MP3 preview bundled unchanged | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `src/pet-packs/puppy/sounds/` | Packaged copies of the bark and snoring sources above | No additional changes | CC0 1.0 |
 
 ## Contribution requirements
 

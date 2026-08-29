@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "virtual-pet-desktop.cat",
+  "name": "Fluffy Cat",
+  "version": "1.0.0",
+  "species": "cat",
+  "description": "A fluffy orange-and-cream cat with a complete desktop animation set.",
+  "authors": [
+    {
+      "name": "Virtual Pet Desktop contributors"
+    }
+  ],
+  "atlas": {
+    "file": "assets/cat-atlas.png",
+    "columns": 4,
+    "rows": 8,
+    "frameWidth": 224,
+    "frameHeight": 224
+  },
+  "animations": {
+    "idle": { "row": 0, "frames": [0, 1, 2, 3], "frameDurationMs": 420, "loop": true },
+    "walk": { "row": 1, "frames": [0, 1, 2, 3], "frameDurationMs": 130, "loop": true },
+    "run": { "row": 2, "frames": [0, 1, 2, 3], "frameDurationMs": 90, "loop": true },
+    "bark": { "row": 3, "frames": [0, 1, 2, 3], "frameDurationMs": 130, "loop": false },
+    "play": { "row": 4, "frames": [0, 1, 2, 3], "frameDurationMs": 150, "loop": true },
+    "sleep": { "row": 5, "frames": [0, 1, 2, 3], "frameDurationMs": 520, "loop": true },
+    "attention": { "row": 6, "frames": [0, 1, 2, 3], "frameDurationMs": 260, "loop": true },
+    "sniff": { "row": 7, "frames": [0, 1, 2, 3], "frameDurationMs": 190, "loop": true },
+    "groom": { "row": 7, "frames": [0, 1, 2, 3], "frameDurationMs": 240, "loop": true }
+  },
+  "sounds": {},
+  "license": {
+    "spdx": "MIT",
+    "assets": [
+      {
+        "path": "assets/cat-atlas.png",
+        "creator": "Virtual Pet Desktop contributors using OpenAI image generation",
+        "source": "https://github.com/sheelarajeshkumar/virtual-pet-desktop",
+        "spdx": "MIT",
+        "modifications": "Generated as a transparent 4x8 atlas and resized to 896x1792 pixels."
+      }
+    ]
+  }
+}

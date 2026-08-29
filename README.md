@@ -14,12 +14,15 @@ An open-source, cross-platform animated desktop pet built with Tauri. Add pets, 
 - macOS fullscreen Spaces and mixed-DPI monitor support
 - Native tray controls for Auto, Call over, Play, Bark, Sleep, and Settings
 - One-shot bark action with a real CC0 dog recording
-- Persistent pet name and species settings
+- Manifest-driven puppy and fluffy-cat pet packs
+- Persistent hunger, energy, happiness, and cleanliness with care actions
+- Configurable pet size, movement speed, sound volume, reduced motion, and care difficulty
+- Persistent pet name, species, appearance, and care settings
 - Lightweight JavaScript canvas renderer with a Rust movement engine
 
 ## Project status
 
-Virtual Pet Desktop is an early community release. The puppy experience is the most complete. The cat renderer is currently a procedural placeholder, and adding a new species still requires small Rust and JavaScript changes. A data-driven pet-pack format is planned.
+Virtual Pet Desktop is an early community release. Puppy and cat assets load through a validated pet-pack manifest. New bundled pets can be added through the catalog and pack files without changing the renderer or Rust engine; custom movement profiles and user-installed external packs remain future work.
 
 ## Requirements
 
@@ -47,7 +50,8 @@ Use the paw icon in the system tray or macOS menu bar to control the pet.
 | Play | Plays around the cursor |
 | Bark | Barks once, then returns to Auto |
 | Sleep | Walks home and sleeps |
-| Name and pet | Updates the saved name and species |
+| Care | Feed, pet, play with, wash, or rest the pet |
+| Name and pet | Updates appearance, motion, audio, and care settings |
 
 ## Checks
 

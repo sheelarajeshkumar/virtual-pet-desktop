@@ -19,7 +19,10 @@ Move native overlay window
 PetSnapshot returned to JavaScript
           |
           v
-Canvas renders sprite frame and plays action audio
+Pet-pack manifest selects atlas frame and sound
+          |
+          v
+Canvas renders sprite and optional care request
 ```
 
 The frontend schedules the next `tick` using the delay returned in each snapshot. Movement states update at roughly 60 Hz, while idle and sleep states use slower intervals to reduce work.
@@ -29,11 +32,15 @@ The frontend schedules the next `tick` using the delay returned in each snapshot
 | Path | Responsibility |
 | --- | --- |
 | `src/index.html` | Pet overlay document |
-| `src/pet.js` | Canvas rendering, sprite selection, bark playback, Tauri calls |
+| `src/pet.js` | Canvas rendering, pack selection, audio playback, care indicators, Tauri calls |
+| `src/pet-pack.js` | Safe manifest normalization and pack-relative asset resolution |
+| `src/pet-packs/` | Catalog, validated manifests, atlases, sounds, and licenses |
 | `src/pet.css` | Transparent overlay styling and display size |
 | `src/settings.*` | Pet name and species settings UI |
+| `src/care.*` | Needs display and care-action UI |
 | `src/assets/` | Sprite atlases and audio |
 | `src-tauri/src/engine.rs` | Platform-neutral state, movement, behavior, animation timing, tests |
+| `src-tauri/src/care.rs` | Platform-neutral needs decay, actions, difficulty, and tests |
 | `src-tauri/src/lib.rs` | Tauri commands, native window handling, monitor geometry, tray, settings storage |
 | `src-tauri/tauri.conf.json` | Window, bundle, security, and app metadata |
 
@@ -54,8 +61,12 @@ Do not move native window calls into the renderer or add operating-system condit
 
 ## Persistence
 
-Settings are serialized as JSON under the operating system's application config directory. No cloud service, telemetry, account, or network runtime is required.
+Settings and care state are serialized as separate JSON files under the operating system's application config directory. Pet-pack files are bundled locally. No cloud service, telemetry, account, or network runtime is required.
 
 ## Security model
 
 The pet WebView loads bundled local files under the configured content security policy. The overlay is click-through and exposes only the Tauri commands registered in `lib.rs`. New commands should validate all frontend input and expose the minimum required capability.
+
+## Future AI boundary
+
+The current core has no AI dependency or network runtime. A future AI companion must be disabled by default, operate asynchronously outside `PetEngine`, request only validated high-level pet actions, and leave movement, packs, care, settings, and offline operation unchanged when disabled or unavailable.

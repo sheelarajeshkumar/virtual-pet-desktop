@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Virtual Pet Settings</title>
     <link rel="stylesheet" href="settings.css" />
+    <script src="pet-pack.js" defer></script>
     <script src="settings.js" defer></script>
   </head>
   <body>
@@ -12,14 +13,87 @@
       <p class="eyebrow">YOUR DESKTOP FRIEND</p>
       <h1>Virtual Pet</h1>
       <form id="settings-form">
-        <label for="name">PET NAME</label>
-        <input id="name" name="name" maxlength="24" required autocomplete="off" />
+        <fieldset>
+          <legend>PET</legend>
+          <div class="field">
+            <label for="name">NAME</label>
+            <input id="name" name="name" maxlength="24" required autocomplete="off" />
+          </div>
 
-        <label for="kind">PET</label>
-        <select id="kind" name="kind">
-          <option value="puppy">Puppy</option>
-          <option value="cat">Cat</option>
-        </select>
+          <div class="field">
+            <label for="kind">KIND</label>
+            <select id="kind" name="kind">
+              <option value="puppy">Puppy</option>
+              <option value="cat">Cat</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="pet-size">SIZE</label>
+            <select id="pet-size" name="petSize">
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>BEHAVIOUR</legend>
+          <div class="field range-field">
+            <label for="movement-speed">SPEED</label>
+            <div class="range-control">
+              <input
+                id="movement-speed"
+                name="movementSpeed"
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value="1"
+              />
+              <output id="movement-speed-value" for="movement-speed">1.0×</output>
+            </div>
+          </div>
+
+          <div class="field range-field">
+            <label for="sound-volume">VOLUME</label>
+            <div class="range-control">
+              <input
+                id="sound-volume"
+                name="soundVolume"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="65"
+              />
+              <output id="sound-volume-value" for="sound-volume">65%</output>
+            </div>
+          </div>
+
+          <div class="field checkbox-field">
+            <input id="reduced-motion" name="reducedMotion" type="checkbox" />
+            <label for="reduced-motion">REDUCE MOTION</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>CARE</legend>
+          <div class="field checkbox-field">
+            <input id="care-enabled" name="careEnabled" type="checkbox" checked />
+            <label for="care-enabled">ENABLE CARE SYSTEM</label>
+          </div>
+
+          <div class="field">
+            <label for="care-difficulty">DIFFICULTY</label>
+            <select id="care-difficulty" name="careDifficulty">
+              <option value="easy">Easy</option>
+              <option value="normal">Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </fieldset>
 
         <button type="submit">SAVE</button>
         <p id="message" role="status" aria-live="polite"></p>
@@ -27,4 +101,3 @@
     </main>
   </body>
 </html>
-

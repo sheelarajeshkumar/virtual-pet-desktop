@@ -1,0 +1,12 @@
+[
+  {
+    "id": "puppy",
+    "name": "Puppy",
+    "manifest": "pet-packs/puppy/pet-pack.json"
+  },
+  {
+    "id": "cat",
+    "name": "Fluffy Cat",
+    "manifest": "pet-packs/cat/pet-pack.json"
+  }
+]

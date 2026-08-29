@@ -1,0 +1,127 @@
+:root {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color: #2b1b11;
+  background: #fff1d6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(360px 220px at 100% 0, #ffd49a, transparent 60%),
+    #fff1d6;
+}
+
+main {
+  max-width: 440px;
+  padding: 20px;
+  margin: 0 auto;
+}
+
+.eyebrow,
+h1,
+label,
+button {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #dc4c00;
+  font-size: 11px;
+}
+
+h1 {
+  margin: 6px 0 16px;
+  font-size: 24px;
+}
+
+.notice {
+  padding: 10px;
+  border: 2px solid #241611;
+  background: #fffdf6;
+  font-size: 12px;
+}
+
+#needs {
+  display: grid;
+  gap: 13px;
+  padding: 14px;
+  border: 3px solid #241611;
+  background: rgb(255 253 246 / 72%);
+}
+
+.need {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 42px;
+  gap: 9px;
+  align-items: center;
+}
+
+label,
+output {
+  font-size: 11px;
+}
+
+output {
+  text-align: right;
+  font-weight: 800;
+}
+
+progress {
+  width: 100%;
+  height: 15px;
+  accent-color: #2f66f0;
+}
+
+#actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+button {
+  min-height: 40px;
+  border: 3px solid #241611;
+  color: white;
+  background: #2f66f0;
+  box-shadow: 3px 3px 0 #241611;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1e50ce;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button:focus-visible {
+  outline: 3px solid #ff7a1a;
+  outline-offset: 2px;
+}
+
+#message {
+  min-height: 20px;
+  margin: 14px 0 0;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 360px) {
+  .need {
+    grid-template-columns: 78px minmax(0, 1fr) 38px;
+  }
+
+  #actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

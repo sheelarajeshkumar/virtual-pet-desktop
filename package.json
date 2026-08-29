@@ -17,11 +17,14 @@
     "dev": "tauri dev",
     "build": "tauri build",
     "icon": "tauri icon src-tauri/icons/app-icon.svg",
-    "check:js": "node --check src/pet.js && node --check src/settings.js",
+    "check:js": "node --check src/pet-pack.js && node --check src/pet.js && node --check src/settings.js && node --check src/care.js",
+    "check:pets": "node scripts/validate-pet-pack.mjs src/pet-packs/puppy && node scripts/validate-pet-pack.mjs src/pet-packs/cat",
     "check:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "check:rust": "cargo check --manifest-path src-tauri/Cargo.toml",
-    "check": "npm run check:js && npm run check:fmt && npm run check:rust",
-    "test": "cargo test --manifest-path src-tauri/Cargo.toml"
+    "check": "npm run check:js && npm run check:pets && npm run check:fmt && npm run check:rust",
+    "test:js": "node --test src/pet-pack.test.mjs",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "test": "npm run test:js && npm run test:rust"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4"

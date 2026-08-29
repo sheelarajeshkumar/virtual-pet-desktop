@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Open-source community documentation and GitHub contribution workflows.
 - CC0 dog-snoring audio that loops only while the puppy sleeps.
+- Validated, manifest-driven puppy and fluffy-cat pet packs.
+- Persistent pet-care state with feed, pet, play, wash, and rest actions.
+- Pet size, movement speed, sound volume, reduced-motion, and care-difficulty settings.
+- Dependency-free pet-pack validation and browser-loader tests.
 
 ### Fixed
 

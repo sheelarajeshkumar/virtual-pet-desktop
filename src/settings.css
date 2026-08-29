@@ -16,7 +16,9 @@ body {
 }
 
 main {
-  padding: 24px;
+  max-width: 520px;
+  padding: 20px;
+  margin: 0 auto;
 }
 
 .eyebrow,
@@ -34,14 +36,37 @@ button {
 }
 
 h1 {
-  margin: 8px 0 20px;
+  margin: 6px 0 14px;
   font-size: 24px;
 }
 
 form {
   display: grid;
-  grid-template-columns: 90px 1fr;
-  gap: 14px;
+  gap: 12px;
+}
+
+fieldset {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 2px solid #241611;
+  background: rgb(255 253 246 / 65%);
+}
+
+legend {
+  padding: 0 6px;
+  color: #dc4c00;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
 }
 
@@ -52,7 +77,7 @@ label {
 input,
 select,
 button {
-  min-height: 40px;
+  min-height: 36px;
   border: 3px solid #241611;
   font: inherit;
 }
@@ -65,10 +90,51 @@ select {
 }
 
 button {
-  grid-column: 2;
+  justify-self: end;
+  min-width: 140px;
+  padding: 6px 18px;
   color: white;
   background: #2f66f0;
   box-shadow: 4px 4px 0 #241611;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+input[type="range"] {
+  min-height: 28px;
+  border: 0;
+  accent-color: #2f66f0;
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+  accent-color: #2f66f0;
+}
+
+.range-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 8px;
+  align-items: center;
+}
+
+output {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.checkbox-field {
+  grid-template-columns: 20px 1fr;
+}
+
+.checkbox-field label {
   cursor: pointer;
 }
 
@@ -80,9 +146,32 @@ select:focus-visible {
 }
 
 #message {
-  grid-column: 2;
   min-height: 20px;
   margin: 0;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#message[data-state="error"] {
   color: #c0392b;
 }
 
+#message[data-state="success"] {
+  color: #176b36;
+}
+
+@media (max-width: 380px) {
+  main {
+    padding: 14px;
+  }
+
+  .field {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .checkbox-field {
+    grid-template-columns: 20px 1fr;
+  }
+}

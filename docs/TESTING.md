@@ -8,7 +8,7 @@ npm run check
 npm test
 ```
 
-`npm run check` validates JavaScript syntax, Rust formatting, and Rust compilation. `npm test` runs the engine unit tests.
+`npm run check` validates JavaScript syntax, both bundled pet packs, Rust formatting, and Rust compilation. `npm test` runs the pet-pack loader tests plus the Rust movement and care tests.
 
 CI runs Rust formatting, Clippy, JavaScript syntax checks, tests, and a Tauri compile check on macOS and Windows.
 
@@ -20,7 +20,10 @@ Before merging behavior, animation, window, or audio changes:
 - Confirm the overlay is transparent and mouse clicks pass through it.
 - Move the cursor slowly and quickly; verify walk/run selection and smooth stopping.
 - Verify left and right facing.
-- Test Auto, Call over, Play, Bark, Sleep, and Settings.
+- Test Auto, Call over, Play, Bark, Sleep, Care, and Settings.
+- Switch between puppy and cat; verify every behavior uses the correct pack row.
+- Change size, speed, volume, reduced motion, and care difficulty.
+- Confirm care actions persist and low needs display a visible request above the pet.
 - Confirm Bark plays once per selection and returns to Auto.
 - On macOS, test another normal Space and a Chrome or Terminal fullscreen Space.
 - On multiple monitors, test different display scaling and negative monitor origins when available.

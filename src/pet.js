@@ -2,31 +2,51 @@ const canvas = document.querySelector("#pet");
 const ctx = canvas.getContext("2d", { alpha: true });
 const invoke = window.__TAURI__.core.invoke;
 const dogAtlas = new Image();
-const ATLAS_COLUMNS = 4;
-const ATLAS_ROWS = 8;
 const PET_SIZE = 224;
-const DOG_ROWS = {
-  idle: 0,
-  walk: 1,
-  run: 2,
-  bark: 3,
-  play: 4,
-  sleep: 5,
-  attention: 6,
-  sniff: 7,
-  groom: 0,
-};
+const PET_SCALES = { small: 0.72, medium: 0.86, large: 1 };
+const packCatalog = fetch("pet-packs/catalog.json")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Pet catalog returned ${response.status}`);
+    return response.json();
+  })
+  .then((entries) => window.VirtualPetPack.normalizeCatalog(entries))
+  .then((entries) => new Map(entries.map((entry) => [entry.id, entry.manifest])));
 let lastSnapshot;
+let activeKind;
+let activePack;
 
 ctx.imageSmoothingEnabled = false;
-dogAtlas.src = "assets/dog-atlas-v2.png";
-const barkSound = new Audio("assets/bark.wav");
+const barkSound = new Audio();
 barkSound.preload = "auto";
-barkSound.volume = 0.65;
-const snoreSound = new Audio("assets/dog-snoring.mp3");
+const snoreSound = new Audio();
 snoreSound.preload = "auto";
-snoreSound.loop = true;
-snoreSound.volume = 0.28;
+
+async function activatePack(kind) {
+  if (kind === activeKind) return;
+  activeKind = kind;
+  activePack = undefined;
+
+  try {
+    const manifestUrl = (await packCatalog).get(kind);
+    if (!manifestUrl) return;
+    const pack = await window.VirtualPetPack.load(manifestUrl);
+    if (activeKind !== kind) return;
+    activePack = pack;
+    dogAtlas.src = pack.atlas.src;
+    const bark = pack.sounds.bark;
+    const sleep = pack.sounds.sleep;
+    if (bark) {
+      barkSound.src = bark.src;
+      barkSound.loop = bark.loop;
+    }
+    if (sleep) {
+      snoreSound.src = sleep.src;
+      snoreSound.loop = sleep.loop;
+    }
+  } catch (error) {
+    console.error(`Could not load the ${kind} pet pack`, error);
+  }
+}
 
 function rect(x, y, width, height, color) {
   ctx.fillStyle = color;
@@ -134,14 +154,30 @@ function drawPlayToy(kind, frame) {
   rect(41 - frame * 5, 38 + frame * 2, 4, 4, "#ef3f35");
 }
 
+function packFrame(snapshot, animation) {
+  if (snapshot.reducedMotion && !["walk", "run"].includes(snapshot.behavior)) {
+    return snapshot.behavior === "sleep"
+      ? animation.frames[animation.frames.length - 1]
+      : animation.frames[0];
+  }
+  const duration = animation.frameDurationMs * (snapshot.reducedMotion ? 2 : 1);
+  const index = Math.floor(snapshot.elapsedMs / duration);
+  const boundedIndex = animation.loop
+    ? index % animation.frames.length
+    : Math.min(index, animation.frames.length - 1);
+  return animation.frames[boundedIndex];
+}
+
 function drawDogAtlas(snapshot) {
-  const frame = snapshot.frame % ATLAS_COLUMNS;
-  const row = DOG_ROWS[snapshot.behavior] ?? DOG_ROWS.idle;
-  const sourceWidth = dogAtlas.naturalWidth / ATLAS_COLUMNS;
-  const sourceHeight = dogAtlas.naturalHeight / ATLAS_ROWS;
+  const animation =
+    activePack.animations[snapshot.behavior] ?? activePack.animations.idle;
+  const frame = packFrame(snapshot, animation);
+  const row = animation.row;
+  const sourceWidth = activePack.atlas.frameWidth;
+  const sourceHeight = activePack.atlas.frameHeight;
   const inset = (canvas.width - PET_SIZE) / 2;
 
-  if (snapshot.behavior === "sleep") {
+  if (snapshot.behavior === "sleep" && snapshot.kind === "puppy") {
     drawDogHouse(snapshot.name);
     ctx.save();
     dogHouseDoorPath();
@@ -232,9 +268,39 @@ function drawDogHouse(name) {
   ctx.fillText(name.slice(0, 8).toUpperCase(), 128, 100);
 }
 
+function drawCareNeed(care) {
+  if (!care) return;
+  const text =
+    care.hunger >= 75
+      ? "FOOD!"
+      : care.energy <= 25
+        ? "REST!"
+        : care.cleanliness <= 25
+          ? "BATH!"
+          : care.happiness <= 30
+            ? "PLAY!"
+            : "";
+  if (!text) return;
+
+  ctx.save();
+  ctx.font = "bold 13px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#241611";
+  ctx.fillRect(169, 9, 76, 29);
+  ctx.fillStyle = "#fffdf6";
+  ctx.fillRect(173, 5, 68, 29);
+  ctx.fillStyle = "#dc4c00";
+  ctx.fillText(text, 207, 25);
+  ctx.restore();
+}
+
 function syncSounds(snapshot) {
-  const shouldSnore = snapshot.kind === "puppy" && snapshot.behavior === "sleep";
-  const wasSnoring = lastSnapshot?.kind === "puppy" && lastSnapshot.behavior === "sleep";
+  const masterVolume = (snapshot.soundVolume ?? 65) / 100;
+  barkSound.volume = (activePack?.sounds.bark?.volume ?? 0.65) * masterVolume;
+  snoreSound.volume = (activePack?.sounds.sleep?.volume ?? 0.28) * masterVolume;
+  const shouldSnore = Boolean(activePack?.sounds.sleep) && snapshot.behavior === "sleep";
+  const wasSnoring =
+    Boolean(lastSnapshot) && !snoreSound.paused && lastSnapshot.behavior === "sleep";
 
   if (shouldSnore && !wasSnoring) {
     snoreSound.currentTime = 0;
@@ -246,8 +312,9 @@ function syncSounds(snapshot) {
 }
 
 function render(snapshot) {
+  if (snapshot.kind !== activeKind) activatePack(snapshot.kind);
   if (
-    snapshot.kind === "puppy" &&
+    activePack?.sounds.bark &&
     snapshot.mode === "bark" &&
     snapshot.behavior === "bark" &&
     lastSnapshot?.mode !== "bark"
@@ -258,33 +325,39 @@ function render(snapshot) {
   syncSounds(snapshot);
   lastSnapshot = snapshot;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  const scale = PET_SCALES[snapshot.petSize] ?? PET_SCALES.medium;
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(scale, scale);
+  ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-  if (snapshot.kind === "puppy" && dogAtlas.complete && dogAtlas.naturalWidth) {
+  if (activePack && dogAtlas.complete && dogAtlas.naturalWidth) {
     drawDogAtlas(snapshot);
-    return;
-  }
-
-  ctx.imageSmoothingEnabled = false;
-  ctx.save();
-  ctx.scale(canvas.width / 50, canvas.height / 50);
-  rect(8, 44, 36, 2, "rgba(36, 22, 17, 0.22)");
-
-  if (snapshot.behavior === "sleep") {
-    drawSleep(snapshot, snapshot.frame);
   } else {
-    if (snapshot.facing === "left") {
-      ctx.translate(50, 0);
-      ctx.scale(-1, 1);
-    }
-    if (snapshot.kind === "cat") drawCat(snapshot, snapshot.frame);
-    else drawPuppy(snapshot, snapshot.frame);
-    if (snapshot.behavior === "play") drawPlayToy(snapshot.kind, snapshot.frame);
-  }
+    ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.scale(canvas.width / 50, canvas.height / 50);
+    rect(8, 44, 36, 2, "rgba(36, 22, 17, 0.22)");
 
-  ctx.restore();
-  ctx.save();
-  ctx.scale(canvas.width / 50, canvas.height / 50);
-  if (snapshot.behavior !== "sleep") pixelText(snapshot.name, 25, 8);
+    if (snapshot.behavior === "sleep") {
+      drawSleep(snapshot, snapshot.frame);
+    } else {
+      if (snapshot.facing === "left") {
+        ctx.translate(50, 0);
+        ctx.scale(-1, 1);
+      }
+      if (snapshot.kind === "cat") drawCat(snapshot, snapshot.frame);
+      else drawPuppy(snapshot, snapshot.frame);
+      if (snapshot.behavior === "play") drawPlayToy(snapshot.kind, snapshot.frame);
+    }
+
+    ctx.restore();
+    ctx.save();
+    ctx.scale(canvas.width / 50, canvas.height / 50);
+    if (snapshot.behavior !== "sleep") pixelText(snapshot.name, 25, 8);
+    ctx.restore();
+  }
+  drawCareNeed(snapshot.care);
   ctx.restore();
 }
 
@@ -312,5 +385,10 @@ render({
   behavior: "idle",
   facing: "right",
   frame: 0,
+  elapsedMs: 0,
+  petSize: "medium",
+  soundVolume: 65,
+  reducedMotion: false,
+  care: null,
 });
 tick();

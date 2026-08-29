@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "virtual-pet-desktop.puppy",
+  "name": "Puppy",
+  "version": "1.0.0",
+  "species": "dog",
+  "description": "The original Virtual Pet Desktop puppy.",
+  "authors": [
+    {
+      "name": "Virtual Pet Desktop contributors"
+    }
+  ],
+  "atlas": {
+    "file": "assets/dog-atlas.png",
+    "columns": 4,
+    "rows": 8,
+    "frameWidth": 224,
+    "frameHeight": 224
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 420,
+      "loop": true
+    },
+    "walk": {
+      "row": 1,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 120,
+      "loop": true
+    },
+    "run": {
+      "row": 2,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 85,
+      "loop": true
+    },
+    "bark": {
+      "row": 3,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 115,
+      "loop": false
+    },
+    "play": {
+      "row": 4,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 130,
+      "loop": true
+    },
+    "sleep": {
+      "row": 5,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 520,
+      "loop": true
+    },
+    "attention": {
+      "row": 6,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 250,
+      "loop": true
+    },
+    "sniff": {
+      "row": 7,
+      "frames": [0, 1, 2, 3],
+      "frameDurationMs": 180,
+      "loop": true
+    }
+  },
+  "sounds": {
+    "bark": {
+      "file": "sounds/bark.wav",
+      "volume": 0.65,
+      "loop": false
+    },
+    "sleep": {
+      "file": "sounds/dog-snoring.mp3",
+      "volume": 0.28,
+      "loop": true
+    }
+  },
+  "license": {
+    "spdx": "MIT",
+    "assets": [
+      {
+        "path": "assets/dog-atlas.png",
+        "creator": "Virtual Pet Desktop contributors",
+        "source": "https://github.com/sheelarajeshkumar/virtual-pet-desktop",
+        "spdx": "MIT",
+        "modifications": "Renamed copy of the original dog-atlas-v2.png artwork."
+      },
+      {
+        "path": "sounds/bark.wav",
+        "creator": "Joseph SARDIN and Axeline T.",
+        "source": "https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html",
+        "spdx": "CC0-1.0",
+        "modifications": "Trimmed to one bark, filtered, faded, normalized, converted to mono, and resampled to 44.1 kHz PCM WAV."
+      },
+      {
+        "path": "sounds/dog-snoring.mp3",
+        "creator": "Filmscore",
+        "source": "https://freesound.org/people/Filmscore/sounds/516871/",
+        "spdx": "CC0-1.0",
+        "modifications": "Freesound high-quality MP3 preview bundled unchanged."
+      }
+    ]
+  }
+}
