@@ -1,30 +1,39 @@
 # Release media workflow
 
-Release media must show the real application. Do not composite a pet over an unrelated desktop or include personal notifications, filenames, accounts, or browser tabs.
+Release screenshots and recordings must show the real application and exclude personal
+notifications, filenames, accounts, browser tabs, and model conversations.
 
-## Capture set
+## Current reviewed media
 
-Create these files under `docs/media/` for a release:
+- `pet-on-desktop.png` — the real 128×128 transparent pet overlay capture.
+- `pack-preview.png` — the real Tauri preview showing the fox rear diagonal run.
+- `ai-disabled-by-default.png` — the real AI window with every optional AI feature off.
+- `demo.mp4` — a 15-second, 20 fps recording of all four fox diagonal walk/run rows.
+- `linkedin-demo.mp4` — a captioned 30-second, 1080p project overview for social posts.
 
-1. `pet-on-desktop.png` — the pet overlay on a clean desktop.
-2. `pack-preview.png` — **Preview pet packs…** showing a directional walk/run frame.
-3. `ai-disabled-by-default.png` — AI Companion with its master switch off.
-4. `demo.mp4` — 15–30 seconds showing cursor follow, Bark selected once, Sleep, and switching pets.
+The current captures were reviewed on macOS. A Windows capture set is still required before a
+stable Windows release; CI packaging is not a substitute for visual review.
 
-Use a 16:9 desktop at 1920×1080 or higher, keep the system pointer away from the pet, and capture one macOS and one Windows example before a stable release.
+## Deterministic capture mode
 
-## macOS screenshots
-
-Run the app, open the intended window, then use the interactive capture script:
+Development builds accept a release-only environment selector without changing saved state:
 
 ```bash
-./scripts/capture-release-media.sh docs/media
+VIRTUAL_PET_RELEASE_MEDIA=ai npm run dev
+VIRTUAL_PET_RELEASE_MEDIA=preview npm run dev
 ```
 
-The script uses interactive selection for every image so it cannot silently capture the whole desktop. Review every file before committing it. Record `demo.mp4` with the macOS screenshot toolbar (`Shift+Command+5`).
+The AI mode forces all AI toggles off. Preview mode selects the bundled fox and cycles only the
+front/back diagonal walk and run rows. This selector is read only at startup and has no production
+UI.
 
-## Windows screenshots
+On macOS, `scripts/macos-window-ids.m` identifies the app-owned window. The included
+`scripts/macos-capture-window.m` captures fully composited frames at a fixed rate, avoiding partial
+WebView redraws in window recordings. Encode reviewed frames with H.264/YUV420p and `faststart` for
+GitHub playback. `scripts/capture-release-media.sh` remains available for interactive screenshots.
+Run `scripts/create-linkedin-demo.sh` to rebuild the social video from the reviewed captures and
+the three SVG cards stored beside it.
 
-Use `Win+Shift+S` for each image and the Snipping Tool screen recorder for `demo.mp4`. Complete the privacy review in [WINDOWS_TESTING.md](WINDOWS_TESTING.md).
-
-Generated artwork may be used as a clearly labelled promotional illustration, but it must not be presented as an application screenshot.
+On Windows, use `Win+Shift+S` and the Snipping Tool recorder, then complete the privacy and GUI
+checks in [WINDOWS_TESTING.md](WINDOWS_TESTING.md). Never present generated artwork as an app
+screenshot; generated pet assets must be identified in [ASSETS.md](../ASSETS.md).

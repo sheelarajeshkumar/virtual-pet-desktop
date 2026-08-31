@@ -23,7 +23,7 @@ An open-source, cross-platform animated desktop pet built with Tauri. Add pets, 
 - Portable settings/care backups and safe community-pack export
 - Bounded JSON behavior extensions that cannot execute code
 - Global hide/show shortcut, configurable from Settings
-- Optional local Ollama companion with contextual chat, opt-in memory, proactive suggestions, voice output, and confirmed actions
+- Optional local Ollama, LM Studio, or llama.cpp companion with streaming chat, encrypted per-pet memory, semantic recall, personalities, proactive suggestions, voice controls, and confirmed actions/routines
 - Configurable pet size, movement speed, sound volume, reduced motion, and care difficulty
 - Persistent pet name, species, appearance, and care settings
 - Lightweight JavaScript canvas renderer with a Rust movement engine
@@ -63,7 +63,7 @@ Use the paw icon in the system tray or macOS menu bar to control the pet.
 | Preview pet packs | Inspects exact side/front/back/diagonal atlas frames |
 | Behaviors | Imports and runs bounded declarative action routines |
 | Backup and export | Backs up local state or exports an installed community pack |
-| AI companion | Configures optional local Ollama chat and confirmed pet actions |
+| AI companion | Configures optional local-provider chat, memory, voice, and confirmed pet actions/routines |
 | Name and pet | Updates appearance, motion, audio, and care settings |
 | Hide/show pet | Toggles the overlay; default shortcut is `CommandOrControl+Shift+P` |
 
@@ -109,9 +109,19 @@ Contributions of code, pixel art, animations, sounds, documentation, testing, an
 
 Please report security issues privately according to [SECURITY.md](SECURITY.md).
 
+## Release preview
+
+![Red fox directional animation preview](docs/media/pack-preview.png)
+
+![AI Companion disabled by default](docs/media/ai-disabled-by-default.png)
+
+[Watch the 15-second fox animation demo](docs/media/demo.mp4).
+
+[Watch the 30-second LinkedIn project demo](docs/media/linkedin-demo.mp4).
+
 ## Asset credits
 
-The puppy and fox sprite sheets are original project assets; fox art was created with OpenAI image generation. Bark audio is adapted from [Small Dog Barking Behind Door](https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html) by Joseph SARDIN and Axeline T., released under CC0. See [ASSETS.md](ASSETS.md) and the per-pack asset records for details.
+The puppy and fox sprite sheets are original project assets; fox art, including the directional atlas, was created with OpenAI image generation and cleaned for production transparency. Bark audio is adapted from [Small Dog Barking Behind Door](https://bigsoundbank.com/small-dog-barking-behind-door-s3537.html) by Joseph SARDIN and Axeline T., released under CC0. See [ASSETS.md](ASSETS.md) and the per-pack asset records for details.
 
 ## License
 

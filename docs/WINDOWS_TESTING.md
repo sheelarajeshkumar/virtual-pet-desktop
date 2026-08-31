@@ -64,10 +64,16 @@ Use this checklist on both Windows 10 and Windows 11 before a release. Test the 
 
 ### Optional AI
 
-- [ ] Core movement, care, packs and audio work with AI disabled and with Ollama absent.
-- [ ] Enabling AI accepts only a loopback Ollama endpoint and failure does not freeze pet movement.
-- [ ] Suggested pet actions run only after pressing the confirmation button.
-- [ ] Memory, proactive suggestions and voice output can each be disabled independently.
+- [ ] Core movement, care, packs and audio work with AI disabled and with every provider absent.
+- [ ] Test Ollama, LM Studio, and llama.cpp presets against a local server; only loopback HTTP endpoints are accepted.
+- [ ] Provider testing reports reachability/models and a missing or stopped server does not freeze pet movement.
+- [ ] Streamed chat renders incrementally and completes without leaking the model's action/routine JSON into the reply.
+- [ ] Encrypted memory survives restart, remains separated by pet, searches semantically when embeddings are enabled, and clears completely.
+- [ ] Export writes readable JSON only after file selection; import validates and restores it into encrypted storage.
+- [ ] Suggested pet actions and bounded routines run only after pressing their confirmation buttons.
+- [ ] Proactive suggestions continue when the AI window is closed and stop when disabled.
+- [ ] Memory, semantic recall, proactive suggestions, speech output, and microphone input can each be disabled independently.
+- [ ] Speech output voice/rate work; microphone permission and the cloud-processing warning are visible before opt-in.
 
 ### Audio and notifications
 

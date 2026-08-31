@@ -16,7 +16,7 @@ body {
 }
 
 main {
-  max-width: 680px;
+  max-width: 760px;
   padding: 20px;
   margin: 0 auto;
 }
@@ -136,6 +136,33 @@ textarea {
   justify-content: end;
 }
 
+.full {
+  grid-column: 1 / -1;
+}
+
+.warning,
+.provider-help {
+  padding: 8px 10px;
+  margin: 0;
+  border: 2px solid #241611;
+  background: #fff8e8;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.provider-help:empty {
+  display: none;
+}
+
+.provider-help[data-state="success"] {
+  background: #e6f5e9;
+}
+
+.provider-help[data-state="error"],
+.provider-help[data-state="warning"] {
+  background: #ffe8db;
+}
+
 button {
   min-height: 38px;
   padding: 7px 13px;
@@ -174,6 +201,24 @@ summary:focus-visible {
 
 #conversation {
   padding: 13px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.section-heading h2 {
+  margin: 0;
+}
+
+button.compact {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 9px;
 }
 
 h2 {
@@ -226,6 +271,12 @@ h2 {
   font-size: 10px;
 }
 
+.message small {
+  display: block;
+  margin-top: 7px;
+  font-size: 10px;
+}
+
 .context-row {
   display: grid;
   grid-template-columns: auto 110px auto minmax(0, 1fr);
@@ -236,9 +287,36 @@ h2 {
 
 .composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
   margin-top: 8px;
+}
+
+#history-tools {
+  margin-top: 16px;
+  border: 3px solid #241611;
+  background: rgb(255 253 246 / 78%);
+}
+
+.search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0 13px 13px;
+}
+
+#search-results {
+  display: grid;
+  gap: 6px;
+  padding: 0 13px 13px;
+  font-size: 10px;
+}
+
+#search-results article {
+  padding: 7px;
+  border: 2px solid #241611;
+  background: white;
+  white-space: pre-wrap;
 }
 
 textarea {
@@ -286,7 +364,13 @@ textarea {
 
   #settings-form,
   .switches,
-  .context-row {
+  .context-row,
+  .search-form {
     grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

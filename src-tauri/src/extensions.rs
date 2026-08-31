@@ -16,7 +16,7 @@ impl fmt::Display for ExtensionError {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ExtensionAction {
     Auto,
@@ -26,14 +26,14 @@ pub enum ExtensionAction {
     Sleep,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtensionStep {
     pub action: ExtensionAction,
     pub duration_ms: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BehaviorExtension {
     pub schema_version: u8,
@@ -68,6 +68,26 @@ pub fn install_extension(
     managed_root: &Path,
 ) -> Result<BehaviorExtension, ExtensionError> {
     let extension = read_extension(source)?;
+    initialize_root(managed_root)?;
+    let destination = managed_root.join(format!("{}.json", extension.id));
+    if destination.exists() {
+        return Err(ExtensionError(format!(
+            "behavior {} is already installed",
+            extension.id
+        )));
+    }
+    let json =
+        serde_json::to_vec_pretty(&extension).map_err(|error| ExtensionError(error.to_string()))?;
+    fs::write(destination, json)
+        .map_err(|error| ExtensionError(format!("cannot install behavior: {error}")))?;
+    Ok(extension)
+}
+
+pub fn install_generated_extension(
+    extension: BehaviorExtension,
+    managed_root: &Path,
+) -> Result<BehaviorExtension, ExtensionError> {
+    validate(&extension)?;
     initialize_root(managed_root)?;
     let destination = managed_root.join(format!("{}.json", extension.id));
     if destination.exists() {

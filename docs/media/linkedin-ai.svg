@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#17131f"/>
+  <circle cx="80" cy="980" r="420" fill="#201b32"/>
+  <rect x="110" y="250" width="14" height="430" rx="7" fill="#2f66eb"/>
+  <text x="165" y="360" fill="#ffffff" font-family="Arial" font-size="60" font-weight="700">AI is optional</text>
+  <text x="170" y="455" fill="#e9dfd4" font-family="Arial" font-size="32">Local providers</text>
+  <text x="170" y="525" fill="#e9dfd4" font-family="Arial" font-size="32">Encrypted per-pet memory</text>
+  <text x="170" y="595" fill="#e9dfd4" font-family="Arial" font-size="32">Streaming chat + safe routines</text>
+  <text x="170" y="690" fill="#78a0ff" font-family="Arial" font-size="32" font-weight="700">Disabled by default</text>
+</svg>

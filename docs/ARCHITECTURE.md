@@ -49,7 +49,7 @@ The frontend schedules the next `tick` using the delay returned in each snapshot
 | `src-tauri/src/backup.rs` | Versioned local backup validation |
 | `src-tauri/src/extensions.rs` | Bounded declarative behavior validation and storage |
 | `src-tauri/src/visibility.rs` | Persisted overlay state and global-shortcut validation |
-| `src-tauri/src/ai.rs` | Loopback-only Ollama client, settings, bounded memory, and action allowlist |
+| `src-tauri/src/ai.rs` | Loopback-only local-provider clients, streaming, encrypted memory, semantic recall, and model-output validation |
 | `src-tauri/src/lib.rs` | Tauri commands, native window handling, monitor geometry, tray, settings storage |
 | `src-tauri/tauri.conf.json` | Window, bundle, security, and app metadata |
 
@@ -70,7 +70,7 @@ Do not move native window calls into the renderer or add operating-system condit
 
 ## Persistence
 
-Settings, care, visibility, and optional AI state are serialized under the operating system's application config directory. Bundled packs remain read-only; validated community packs and behavior files are copied under app-managed roots. The core requires no cloud service, telemetry, account, or network runtime. AI is disabled by default and accepts only a local loopback Ollama endpoint.
+Settings, care, and visibility are serialized under the operating system's application config directory. Optional AI chat and vectors are XChaCha20-Poly1305 encrypted with a random key stored in the operating-system credential store. Bundled packs remain read-only; validated community packs and behavior files are copied under app-managed roots. The core requires no cloud service, telemetry, account, or network runtime. AI is disabled by default and accepts only local loopback Ollama, LM Studio, or llama.cpp endpoints.
 
 ## Security model
 
@@ -78,4 +78,4 @@ The pet WebView loads bundled files and only the app-managed external-packs dire
 
 ## AI boundary
 
-AI is isolated from `PetEngine`, runs local model calls on a blocking worker, and can only suggest seven validated high-level actions. Suggestions require explicit confirmation. Disabling AI leaves movement, packs, care, settings, and offline operation unchanged.
+AI is isolated from `PetEngine` and performs asynchronous local HTTP calls without holding the engine lock. Provider input/output, memory archives, embeddings, and generated routines are bounded in Rust. The model can only suggest seven validated high-level actions or an eight-step/30-second declarative routine; both require explicit confirmation. Proactive checks run from the pet window so closing the AI window does not stop the configured background feature. Disabling AI leaves movement, packs, care, settings, and offline operation unchanged.

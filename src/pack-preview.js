@@ -42,7 +42,14 @@ function draw() {
   const scale = Math.min(280 / atlas.frameWidth, 280 / atlas.frameHeight);
   const width = atlas.frameWidth * scale;
   const height = atlas.frameHeight * scale;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#fffdf6";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#eadfcf";
+  for (let y = 0; y < canvas.height; y += 8) {
+    for (let x = 0; x < canvas.width; x += 8) {
+      if ((x / 8 + y / 8) % 2 === 0) ctx.fillRect(x, y, 8, 8);
+    }
+  }
   ctx.save();
   if (direction().facing === "left") {
     ctx.translate(canvas.width, 0);
@@ -114,10 +121,33 @@ async function loadSources() {
       }),
     );
     if (!sources.size) throw new Error("No pet packs are available");
+    const releaseMedia = location.href.includes("release-media=1");
+    if (releaseMedia && sources.has("bundled:fox")) packSelect.value = "bundled:fox";
     await loadPack();
+    if (releaseMedia) startReleaseDemo();
   } catch (error) {
     setMessage(`Could not list packs: ${String(error)}`, "error");
   }
+}
+
+function startReleaseDemo() {
+  let tick = 0;
+  behaviorSelect.value = "run";
+  directionSelect.value = "down-right";
+  syncAnimation();
+  window.setInterval(() => {
+    tick += 1;
+    if (tick % 40 === 0) {
+      directionSelect.value = directionSelect.value === "down-right" ? "up-right" : "down-right";
+      syncAnimation();
+    } else if (tick % 24 === 0) {
+      behaviorSelect.value = behaviorSelect.value === "run" ? "walk" : "run";
+      syncAnimation();
+    } else {
+      frameInput.value = String((Number(frameInput.value) + 1) % (Number(frameInput.max) + 1));
+      draw();
+    }
+  }, 180);
 }
 
 packSelect.addEventListener("change", loadPack);

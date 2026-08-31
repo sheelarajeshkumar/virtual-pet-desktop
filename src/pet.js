@@ -461,3 +461,9 @@ render({
   care: null,
 });
 tick();
+
+// The pet window remains alive even when the AI window is closed, so proactive
+// suggestions are checked here and delivered by a system notification.
+window.setInterval(() => {
+  invoke("ai_proactive", { mood: null, context: null }).catch(() => {});
+}, 60_000);

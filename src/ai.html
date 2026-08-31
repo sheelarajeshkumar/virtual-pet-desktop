@@ -9,37 +9,50 @@
   </head>
   <body>
     <main>
-      <p class="eyebrow">OPTIONAL · LOCAL · PRIVATE</p>
+      <p class="eyebrow">OPTIONAL · LOCAL PROVIDERS · CORE PET WORKS WITHOUT AI</p>
       <div class="heading">
         <div>
           <h1>AI Companion</h1>
-          <p>Uses your local Ollama server. Core pet behavior never depends on AI.</p>
+          <p>Chat, local memory, voice, suggestions, and safe routines are independently configurable.</p>
         </div>
-        <label class="master" for="enabled">
-          <input id="enabled" type="checkbox" />
-          Enabled
-        </label>
+        <label class="master" for="enabled"><input id="enabled" type="checkbox" /> Enabled</label>
       </div>
 
-      <details id="configuration">
+      <details id="configuration" open>
         <summary>LOCAL AI SETTINGS</summary>
         <form id="settings-form">
-          <label for="endpoint">Ollama endpoint</label>
-          <input
-            id="endpoint"
-            type="url"
-            value="http://127.0.0.1:11434"
-            spellcheck="false"
-            required
-          />
+          <label for="provider">Provider</label>
+          <select id="provider">
+            <option value="ollama">Ollama</option>
+            <option value="lmStudio">LM Studio</option>
+            <option value="llamaCpp">llama.cpp</option>
+          </select>
 
-          <label for="model">Model</label>
-          <input id="model" value="llama3.2" maxlength="80" spellcheck="false" required />
+          <label for="endpoint">Local endpoint</label>
+          <input id="endpoint" type="url" spellcheck="false" required />
+
+          <label for="model">Chat model</label>
+          <input id="model" list="available-models" maxlength="120" spellcheck="false" required />
+          <datalist id="available-models"></datalist>
+
+          <label for="embedding-model">Embedding model</label>
+          <input id="embedding-model" list="available-models" maxlength="120" spellcheck="false" />
+
+          <label for="personality">Personality</label>
+          <select id="personality">
+            <option value="loyal">Loyal</option>
+            <option value="playful">Playful</option>
+            <option value="calm">Calm</option>
+            <option value="curious">Curious</option>
+            <option value="gentle">Gentle</option>
+          </select>
 
           <div class="switches">
-            <label><input id="memory-enabled" type="checkbox" /> Remember recent chats locally</label>
-            <label><input id="proactive-enabled" type="checkbox" /> Proactive suggestions</label>
+            <label><input id="memory-enabled" type="checkbox" /> Encrypted per-pet memory</label>
+            <label><input id="semantic-memory" type="checkbox" /> Semantic/vector recall</label>
+            <label><input id="proactive-enabled" type="checkbox" /> Background suggestions</label>
             <label><input id="voice-output" type="checkbox" /> Read replies aloud</label>
+            <label><input id="speech-input" type="checkbox" /> Microphone input</label>
           </div>
 
           <label for="cooldown">Suggestion cooldown</label>
@@ -51,17 +64,35 @@
             <option value="240">4 hours</option>
           </select>
 
-          <div class="settings-actions">
+          <label for="voice">System voice</label>
+          <select id="voice"><option value="">System default</option></select>
+
+          <label for="speech-rate">Speaking speed <output id="speech-rate-value">1.0×</output></label>
+          <input id="speech-rate" type="range" min="0.5" max="2" step="0.1" value="1" />
+
+          <p class="warning full">
+            Microphone recognition depends on the system webview and may use an OS or cloud speech
+            service. It is never enabled automatically.
+          </p>
+          <div class="settings-actions full">
             <button type="submit">SAVE SETTINGS</button>
-            <button id="clear-memory" class="secondary" type="button">CLEAR MEMORY</button>
+            <button id="test-provider" class="secondary" type="button">TEST PROVIDER</button>
           </div>
+          <div id="provider-help" class="provider-help full" aria-live="polite"></div>
         </form>
       </details>
 
       <section id="conversation" aria-labelledby="conversation-title">
-        <h2 id="conversation-title">CHAT</h2>
+        <div class="section-heading">
+          <h2 id="conversation-title">CHAT</h2>
+          <div>
+            <button id="export-chat" class="compact secondary" type="button">EXPORT</button>
+            <button id="import-chat" class="compact secondary" type="button">IMPORT</button>
+            <button id="clear-memory" class="compact secondary" type="button">CLEAR</button>
+          </div>
+        </div>
         <div id="messages" role="log" aria-live="polite" aria-relevant="additions">
-          <p class="empty">Enable AI Companion, then ask your pet something.</p>
+          <p class="empty">Enable AI Companion, test the provider, then ask your pet something.</p>
         </div>
 
         <form id="chat-form">
@@ -69,34 +100,32 @@
             <label for="mood">Mood</label>
             <select id="mood">
               <option value="">Auto from care state</option>
-              <option value="happy">Happy</option>
-              <option value="calm">Calm</option>
-              <option value="playful">Playful</option>
-              <option value="tired">Tired</option>
-              <option value="sad">Sad</option>
-              <option value="stressed">Stressed</option>
+              <option value="happy">Happy</option><option value="calm">Calm</option>
+              <option value="playful">Playful</option><option value="tired">Tired</option>
+              <option value="sad">Sad</option><option value="stressed">Stressed</option>
             </select>
             <label for="context">Extra context</label>
             <input id="context" maxlength="280" placeholder="Optional: visitors, quiet time…" />
           </div>
           <label class="sr-only" for="message">Message</label>
           <div class="composer">
-            <textarea
-              id="message"
-              maxlength="2000"
-              rows="2"
-              placeholder="Talk to your companion…"
-              required
-            ></textarea>
+            <textarea id="message" maxlength="2000" rows="2" placeholder="Talk to your companion…" required></textarea>
+            <button id="microphone" class="secondary" type="button" aria-label="Dictate message">MIC</button>
             <button id="send" type="submit">SEND</button>
           </div>
         </form>
       </section>
 
-      <p class="privacy">
-        No telemetry, cloud keys, or automatic pet actions. Suggested actions run only after you
-        confirm them.
-      </p>
+      <details id="history-tools">
+        <summary>SEARCH PET MEMORY</summary>
+        <form id="search-form" class="search-form">
+          <input id="search-query" maxlength="2000" placeholder="Search this pet’s remembered history…" required />
+          <button type="submit">SEARCH</button>
+        </form>
+        <div id="search-results" aria-live="polite"></div>
+      </details>
+
+      <p class="privacy">No telemetry, cloud API keys, redirects, or automatic pet actions. Every suggested action and routine requires confirmation.</p>
       <p id="status" role="status" aria-live="polite"></p>
     </main>
   </body>

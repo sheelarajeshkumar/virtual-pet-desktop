@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Persistent pet-care state with feed, pet, play, wash, and rest actions.
 - Pet size, movement speed, sound volume, reduced-motion, and care-difficulty settings.
 - Dependency-free pet-pack validation and browser-loader tests.
+- Local Ollama, LM Studio, and llama.cpp streaming AI with encrypted per-pet memory, semantic recall, personalities, background suggestions, voice controls, and confirmed actions/routines.
+- Transparent 4×4 red-fox atlas for front/back diagonal walk and run animations.
+- Privacy-reviewed macOS release screenshots plus deterministic 15-second and 30-second demo recordings.
 
 ### Fixed
 

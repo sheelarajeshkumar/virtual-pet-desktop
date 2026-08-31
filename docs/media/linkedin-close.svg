@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#17131f"/>
+  <circle cx="1720" cy="170" r="380" fill="#261d34"/>
+  <circle cx="1560" cy="1040" r="440" fill="#21182d"/>
+  <text x="130" y="440" fill="#ffffff" font-family="Arial" font-size="76" font-weight="700">Build the next pet with us</text>
+  <text x="135" y="535" fill="#e9dfd4" font-family="Arial" font-size="38">Pets  |  animations  |  behaviors  |  AI</text>
+  <text x="135" y="640" fill="#ff9b62" font-family="Arial" font-size="34" font-weight="700">github.com/sheelarajeshkumar/virtual-pet-desktop</text>
+</svg>

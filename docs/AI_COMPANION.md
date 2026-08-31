@@ -1,54 +1,69 @@
 # Optional AI Companion
 
-AI Companion is an optional local feature. It is disabled by default, while movement, care,
-sounds, pet packs, and every other core feature continue to work without it.
+AI Companion is local, optional, and disabled by default. Movement, care, sounds, pet packs,
+and behavior extensions work normally when AI is disabled or no model server is installed.
 
-## Start local Ollama
+## Supported providers
 
-Install [Ollama](https://ollama.com/), then run:
+| Provider | Default endpoint | Required API |
+| --- | --- | --- |
+| Ollama | `http://127.0.0.1:11434` | `/api/tags`, `/api/chat`, and optional `/api/embed` |
+| LM Studio | `http://127.0.0.1:1234` | `/v1/models`, `/v1/chat/completions`, and optional `/v1/embeddings` |
+| llama.cpp | `http://127.0.0.1:8080` | OpenAI-compatible `/v1/models`, `/v1/chat/completions`, and optional `/v1/embeddings` |
+
+Only plain HTTP loopback hosts (`localhost`, `127.0.0.1`, or `[::1]`) are accepted. Redirects,
+cloud endpoints, credentials in URLs, and remote LAN addresses are rejected.
+
+For Ollama:
 
 ```bash
 ollama serve
 ollama pull llama3.2
+ollama pull nomic-embed-text # only needed for semantic recall
 ```
 
-Open **AI Companion** from the tray, keep the endpoint at
-`http://127.0.0.1:11434`, choose the installed model, and enable the master switch. The endpoint
-accepts only plain HTTP loopback addresses (`localhost`, `127.0.0.1`, or `[::1]`); remote and
-cloud endpoints are rejected.
+For LM Studio, load a local model and start its local server. For llama.cpp, a typical chat
+server is `llama-server -m model.gguf --host 127.0.0.1 --port 8080`. Semantic recall stays
+off unless that endpoint also provides a compatible embedding model. Use **Test provider** in
+the app before enabling AI; it verifies server reachability and reports the available models.
 
-## Features and privacy
+## Features
 
-- Chat automatically includes the current pet name, species, mood, needs, inventory, and sleep state; optional user context can add situational detail.
-- Local memory is independently opt-in and retains at most 20 recent messages.
-- Proactive suggestions are independently opt-in with a 5–240 minute cooldown.
-- Voice output uses the operating system browser voice through `speechSynthesis` and falls back
-  to text when unavailable.
-- Model-suggested actions are restricted to `feed`, `play`, `wash`, `pet`, `sleep`, `wake`, and
-  `bark`. A suggestion never runs until the user presses its confirmation button.
-- No telemetry, cloud service, API key, or cloud-key storage is included. Settings and optional
-  memory stay in the app's local configuration directory.
-- Requests use a 3-second connection timeout, 15-second I/O timeout, a 64 KB request limit, and
-  a 256 KB response limit. Ollama failure affects only the AI command.
+- Streamed contextual chat includes the current pet, mood, needs, inventory, and sleep state.
+- Loyal, playful, calm, curious, and gentle personalities change the system instruction.
+- Per-pet history stores at most 100 messages; semantic recall stores at most 200 bounded vectors.
+- Background suggestions continue while the AI window is closed, subject to a 5–240 minute cooldown.
+- System text-to-speech supports voice selection and a 0.5–2.0 speaking-rate control.
+- Microphone input is separately opt-in. WebView speech recognition may use an operating-system or
+  cloud speech service, so the UI warns before it is enabled and requests local processing when the
+  platform supports it.
+- Suggested actions are limited to `feed`, `play`, `wash`, `pet`, `sleep`, `wake`, and `bark`.
+- Suggested routines contain at most eight declarative steps and 30 seconds of delays. Actions and
+  routines never run until the user confirms them.
+- Chat can be searched, exported, imported, or cleared from the AI window.
 
-Disable AI Companion at any time without changing the pet. Disable memory or press **Clear
-memory** to remove saved conversation history.
+## Privacy and storage
+
+The app has no telemetry, account, cloud provider, or API-key field. AI requests go only to the
+configured local loopback server. Saved chat and semantic memory are encrypted with
+XChaCha20-Poly1305; the random encryption key is held by the operating-system credential store.
+Settings do not contain conversation text.
+
+Export is an explicit portability action and writes readable JSON at the path selected by the
+user. Treat exports as private data. Import validates the archive size and message bounds before
+re-encrypting it into local storage. Disabling memory or pressing **Clear** removes saved chat and
+semantic memory without affecting the pet.
+
+## Failure isolation and limits
+
+Provider errors affect only AI. Chat uses a 30-second I/O timeout, a 128 KiB request limit, and a
+512 KiB response limit. Local memory is capped at 4 MiB and imports at 2 MiB. Model names,
+messages, contexts, vectors, suggested actions, and routine steps are validated in Rust before use.
 
 ## Tauri integration contract
 
-`src-tauri/src/ai.rs` intentionally has no dependency on the pet engine. The app shell owns a
-`Mutex<AiCompanion>` and exposes these commands to `ai.js`:
-
-| Command | Input | Output |
-| --- | --- | --- |
-| `get_ai_settings` | none | `AiSettings` |
-| `save_ai_settings` | `{ settings: AiSettings }` | `AiSettings` |
-| `clear_ai_memory` | none | `()` |
-| `ai_chat` | `{ input: AiChatInput }` | `AiChatResponse` |
-| `ai_proactive` | `{ mood, context }` | `AiChatResponse` or `null` when cooling down |
-| `confirm_ai_action` | `{ action }` | `()` after re-validating the allowlist |
-
-For chat, lock only long enough to call `prepare_chat`, run `execute_chat` on Tauri's blocking
-pool, then lock again for `finish_chat`. This keeps the local model request away from the UI and
-pet tick loops. The confirmation command must parse `SuggestedAction` again before routing to the
-existing care/mode functions.
+`src-tauri/src/ai.rs` owns provider requests, streaming parsers, encrypted storage, semantic
+search, and model-output validation without depending on `PetEngine`. `lib.rs` adds current pet
+context and exposes commands for runtime settings, provider testing, normal/streamed chat, memory
+search/export/import/clear, proactive suggestions, and action/routine confirmation. Confirmed
+routines are installed through the same validator used by community behavior extensions.

@@ -14,6 +14,7 @@ Every bundled asset must have a known source and a license compatible with open-
 | `src/pet-packs/cat/assets/cat-atlas.png` | Original project artwork created with OpenAI image generation and resized to a 4×8 atlas | MIT |
 | `src/pet-packs/fox/assets/fox-atlas.png` | Original project artwork created with OpenAI image generation and resized to a 4×8 atlas | MIT |
 | `src/pet-packs/fox/assets/fox-directional-atlas.png` | Original project artwork created with OpenAI image generation and resized to a 4×4 front/back atlas | MIT |
+| `src/pet-packs/fox/assets/fox-diagonal-atlas.png` | Original project artwork created with OpenAI image generation, alpha-cleaned, and resized to a 4×4 diagonal atlas | MIT |
 | `src-tauri/icons/` | Original Virtual Pet Desktop artwork and generated icon sizes | MIT |
 
 ## Third-party assets

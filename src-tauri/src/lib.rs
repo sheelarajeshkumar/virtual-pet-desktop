@@ -13,7 +13,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use ai::{AiChatInput, AiChatResponse, AiCompanion, AiSettings, SuggestedAction};
+use ai::{
+    AiChatInput, AiChatResponse, AiCompanion, AiHealth, AiMemoryResult, AiRoutineDraft,
+    AiRuntimeState, AiSettings, AiStreamEvent, SuggestedAction,
+};
 use backup::BackupFile;
 use care::{CareAction, CareActionResult, CareDifficulty, CareState};
 use engine::{Mode, PetEngine, PetSettings, PetSize, PetSnapshot, Point, Rect, TickInput};
@@ -26,11 +29,13 @@ use tauri::LogicalPosition;
 use tauri::PhysicalPosition;
 use tauri::{
     image::Image,
+    ipc::Channel,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+use tauri_plugin_notification::NotificationExt;
 use visibility::{Visibility, VisibilityState};
 
 type EngineState = Mutex<PetEngine>;
@@ -811,6 +816,13 @@ fn get_ai_settings(ai: State<'_, AiStore>) -> Result<AiSettings, String> {
 }
 
 #[tauri::command]
+fn get_ai_runtime(ai: State<'_, AiStore>) -> Result<AiRuntimeState, String> {
+    ai.lock()
+        .map(|companion| companion.runtime_state())
+        .map_err(|_| "AI settings are unavailable".to_string())
+}
+
+#[tauri::command]
 fn save_ai_settings(settings: AiSettings, ai: State<'_, AiStore>) -> Result<AiSettings, String> {
     ai.lock()
         .map_err(|_| "AI settings are unavailable".to_string())?
@@ -824,6 +836,27 @@ fn clear_ai_memory(ai: State<'_, AiStore>) -> Result<(), String> {
         .clear_memory()
 }
 
+#[tauri::command]
+fn export_ai_chat(path: String, ai: State<'_, AiStore>) -> Result<(), String> {
+    ai.lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .export_chat(std::path::Path::new(&path))
+}
+
+#[tauri::command]
+fn import_ai_chat(path: String, ai: State<'_, AiStore>) -> Result<usize, String> {
+    ai.lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .import_chat(std::path::Path::new(&path))
+}
+
+#[tauri::command]
+fn take_ai_suggestions(ai: State<'_, AiStore>) -> Result<Vec<AiChatResponse>, String> {
+    ai.lock()
+        .map(|mut companion| companion.take_pending())
+        .map_err(|_| "AI settings are unavailable".to_string())
+}
+
 fn add_pet_context(
     mut input: AiChatInput,
     engine: &EngineState,
@@ -833,6 +866,7 @@ fn add_pet_context(
         .lock()
         .map_err(|_| "Pet settings are unavailable".to_string())?
         .settings();
+    input.set_pet_id(settings.kind.clone());
     let care = care
         .lock()
         .map_err(|_| "Care state is unavailable".to_string())?
@@ -877,17 +911,30 @@ fn add_pet_context(
 }
 
 async fn run_ai_chat(input: AiChatInput, ai: &AiStore, now: u64) -> Result<AiChatResponse, String> {
+    let query_request = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .prepare_embedding_query(&input);
+    let query_embedding = match query_request {
+        Some(request) => ai::execute_embedding(&request).await.ok(),
+        None => None,
+    };
     let prepared = ai
         .lock()
         .map_err(|_| "AI settings are unavailable".to_string())?
-        .prepare_chat(input, now)?;
-    let network_copy = prepared.clone();
-    let completed = tauri::async_runtime::spawn_blocking(move || ai::execute_chat(&network_copy))
-        .await
-        .map_err(|error| error.to_string())??;
+        .prepare_chat(input, now, query_embedding.as_deref())?;
+    let completed = ai::execute_chat(&prepared).await?;
+    let settings = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .settings();
+    let memory_embedding = match prepared.memory_embedding(&settings, &completed.reply) {
+        Some(request) => ai::execute_embedding(&request).await.ok(),
+        None => None,
+    };
     ai.lock()
         .map_err(|_| "AI settings are unavailable".to_string())?
-        .finish_chat(prepared, completed, now)
+        .finish_chat(prepared, completed, now, memory_embedding)
 }
 
 #[tauri::command]
@@ -902,12 +949,79 @@ async fn ai_chat(
 }
 
 #[tauri::command]
+async fn ai_chat_stream(
+    input: AiChatInput,
+    on_event: Channel<AiStreamEvent>,
+    ai: State<'_, AiStore>,
+    engine: State<'_, EngineState>,
+    care: State<'_, CareStore>,
+) -> Result<(), String> {
+    let input = add_pet_context(input, &engine, &care)?;
+    let now = now_ms()?;
+    let query_request = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .prepare_embedding_query(&input);
+    let query_embedding = match query_request {
+        Some(request) => ai::execute_embedding(&request).await.ok(),
+        None => None,
+    };
+    let prepared = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .prepare_chat(input, now, query_embedding.as_deref())?;
+    let completed = ai::execute_chat_stream(&prepared, &on_event).await?;
+    let settings = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .settings();
+    let memory_embedding = match prepared.memory_embedding(&settings, &completed.reply) {
+        Some(request) => ai::execute_embedding(&request).await.ok(),
+        None => None,
+    };
+    let response = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .finish_chat(prepared, completed, now, memory_embedding)?;
+    on_event
+        .send(AiStreamEvent::Done(response))
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn test_ai_provider(settings: AiSettings) -> Result<AiHealth, String> {
+    ai::test_provider(settings).await
+}
+
+#[tauri::command]
+async fn search_ai_memory(
+    query: String,
+    ai: State<'_, AiStore>,
+    engine: State<'_, EngineState>,
+) -> Result<Vec<AiMemoryResult>, String> {
+    let pet_id = engine
+        .lock()
+        .map_err(|_| "Pet settings are unavailable".to_string())?
+        .settings()
+        .kind;
+    let request = ai
+        .lock()
+        .map_err(|_| "AI settings are unavailable".to_string())?
+        .prepare_search(&query)?;
+    let vector = ai::execute_embedding(&request).await?;
+    ai.lock()
+        .map(|companion| companion.search_memory(&pet_id, &vector))
+        .map_err(|_| "AI settings are unavailable".to_string())
+}
+
+#[tauri::command]
 async fn ai_proactive(
     mood: Option<String>,
     context: Option<String>,
     ai: State<'_, AiStore>,
     engine: State<'_, EngineState>,
     care: State<'_, CareStore>,
+    app: AppHandle,
 ) -> Result<Option<AiChatResponse>, String> {
     let now = now_ms()?;
     if !ai
@@ -923,11 +1037,36 @@ async fn ai_proactive(
             mood,
             context,
             proactive: true,
+            ..AiChatInput::default()
         },
         &engine,
         &care,
     )?;
-    run_ai_chat(input, &ai, now).await.map(Some)
+    let response = run_ai_chat(input, &ai, now).await?;
+    let _ = app.emit("ai-suggestion", &response);
+    let _ = app
+        .notification()
+        .builder()
+        .title("Virtual Pet companion")
+        .body(&response.reply)
+        .show();
+    Ok(Some(response))
+}
+
+#[tauri::command]
+fn confirm_ai_routine(
+    routine: AiRoutineDraft,
+    app: AppHandle,
+) -> Result<BehaviorExtension, String> {
+    let extension = BehaviorExtension {
+        schema_version: 1,
+        id: format!("ai.routine-{}", now_ms()?),
+        name: routine.name,
+        description: routine.description,
+        steps: routine.steps,
+    };
+    extensions::install_generated_extension(extension, &behaviors_path(&app)?)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -1227,11 +1366,19 @@ pub fn run() {
             toggle_pet_visibility,
             save_visibility_shortcut,
             get_ai_settings,
+            get_ai_runtime,
             save_ai_settings,
             clear_ai_memory,
+            export_ai_chat,
+            import_ai_chat,
+            take_ai_suggestions,
             ai_chat,
+            ai_chat_stream,
             ai_proactive,
-            confirm_ai_action
+            test_ai_provider,
+            search_ai_memory,
+            confirm_ai_action,
+            confirm_ai_routine
         ])
         .setup(|app| {
             app.manage(Mutex::new(PetEngine::new(load_settings_file(app.handle()))));
@@ -1262,6 +1409,37 @@ pub fn run() {
             app.global_shortcut().register(shortcut.as_str())?;
             apply_visibility(app.handle(), initial_visibility)?;
             build_tray(app)?;
+            if let Ok(media) = std::env::var("VIRTUAL_PET_RELEASE_MEDIA") {
+                match media.as_str() {
+                    "ai" => {
+                        WebviewWindowBuilder::new(
+                            app,
+                            "ai",
+                            WebviewUrl::App("ai.html?release-media=1".into()),
+                        )
+                        .title("AI Companion")
+                        .inner_size(760.0, 900.0)
+                        .resizable(false)
+                        .always_on_top(true)
+                        .center()
+                        .build()?;
+                    }
+                    "preview" => {
+                        WebviewWindowBuilder::new(
+                            app,
+                            "pack-preview",
+                            WebviewUrl::App("pack-preview.html?release-media=1".into()),
+                        )
+                        .title("Pet Pack Preview")
+                        .inner_size(900.0, 720.0)
+                        .resizable(false)
+                        .always_on_top(true)
+                        .center()
+                        .build()?;
+                    }
+                    _ => {}
+                }
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

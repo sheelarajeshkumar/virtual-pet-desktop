@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#17131f"/>
+  <circle cx="1740" cy="100" r="380" fill="#261d34"/>
+  <circle cx="1550" cy="960" r="440" fill="#21182d"/>
+  <rect x="120" y="280" width="16" height="330" rx="8" fill="#ff6b35"/>
+  <text x="170" y="390" fill="#ffffff" font-family="Arial" font-size="62" font-weight="700">Meet Virtual Pet Desktop</text>
+  <text x="175" y="480" fill="#e9dfd4" font-family="Arial" font-size="32">A tiny companion that lives above your apps</text>
+  <text x="175" y="585" fill="#ff9b62" font-family="Arial" font-size="30" font-weight="700">OPEN SOURCE  |  macOS + Windows</text>
+</svg>
