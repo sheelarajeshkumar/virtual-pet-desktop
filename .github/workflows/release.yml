@@ -238,7 +238,7 @@ jobs:
       RELEASE_TAG: ${{ needs.preflight.outputs.tag }}
     steps:
       - name: Download signed artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: virtual-pet-*-signed-${{ needs.preflight.outputs.tag }}
           path: release-assets
